@@ -1,6 +1,6 @@
 # GitAgent AI Starter Template
 
-This is a simple, AI-powered trading agent designed to run on the GitAgent platform.
+This is a simple, AI-powered trading agent designed to run on the GitAgent platform
 
 ## How it Works
 
