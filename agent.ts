@@ -50,7 +50,8 @@ async function getSomiPrice(): Promise<number> {
     return fallbackPrice;
     
   } catch (error) {
-    console.error('[PriceFeed] Error fetching price:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[PriceFeed] Error fetching price:', errorMessage);
     // Fallback price if API fails
     const fallbackPrice = 0.40 + (Math.random() - 0.5) * 0.05;
     console.log(`[PriceFeed] Using fallback price (API error): $${fallbackPrice.toFixed(4)}`);
@@ -86,7 +87,8 @@ async function runDecisionLoop() {
     }
 
   } catch (error) {
-    console.error('Error in decision loop:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Error in decision loop:', errorMessage);
   }
 }
 
