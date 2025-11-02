@@ -223,7 +223,8 @@ program
 
     try {
       console.log(chalk.cyan(`Fetching logs for ${branch_name}...`));
-      const url = `${API_BASE_URL}/api/logs/${encodeURIComponent(config.repo_url)}/${encodeURIComponent(branch_name)}`;
+      const branch_hash = calculateBranchHash(config.repo_url, branch_name);
+      const url = `${API_BASE_URL}/api/logs/${branch_hash}`;
       const { data } = await axios.get(url);
 
       console.log(chalk.bold(`--- Last 50 Logs: ${branch_name} ---`));
@@ -233,7 +234,14 @@ program
         console.log(chalk.yellow('No logs found.'));
       }
     } catch (err) {
-      console.error(chalk.red(`Error fetching logs: ${err.response?.data?.error || err.message}`));
+      const errorMsg = err.response?.data?.error || err.message;
+      if (err.response?.status === 404) {
+        console.error(chalk.red(`Agent not found for branch "${branch_name}"`));
+        console.log(chalk.yellow(`  → Make sure you've pushed this branch: ${chalk.cyan(`git push origin ${branch_name}`)}`));
+        console.log(chalk.yellow(`  → The backend webhook will deploy it automatically`));
+      } else {
+        console.error(chalk.red(`Error fetching logs: ${errorMsg}`));
+      }
     }
   });
 
