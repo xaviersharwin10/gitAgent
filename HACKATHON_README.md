@@ -103,6 +103,38 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 ## Getting Started
 
+### For Hackathon Judges / Demo Users
+
+**Quick Install (2 minutes):**
+```bash
+# 1. Install CLI from GitHub
+npm install -g https://github.com/xaviersharwin10/gitAgent.git#main --prefix=./git-agent-cli
+git config --global alias.somnia-agent '!git-somnia-agent'
+
+# 2. Verify installation
+git somnia-agent --help
+```
+
+**Try it with a test repository:**
+```bash
+# Clone your agent repository
+git clone https://github.com/xaviersharwin10/gitAgent.git my-ai-bot
+cd my-ai-bot
+
+# Initialize
+git somnia-agent init
+
+# View stats (if agent is running)
+git somnia-agent stats
+git somnia-agent logs
+```
+
+**Live Dashboard:** `https://unabortive-davion-refractorily.ngrok-free.dev/dashboard`
+
+---
+
+### Full Setup Guide
+
 1. **Fork/Clone the Agent Template:**
    ```bash
    git clone https://github.com/xaviersharwin10/gitAgent.git my-ai-bot
@@ -112,7 +144,7 @@ Agent can execute trades/DeFi on Somnia via contract.execute()
 
 2. **Set up GitAgent:**
    ```bash
-   npm install -g git-somnia-agent
+   npm install -g https://github.com/xaviersharwin10/gitAgent.git#main --prefix=./git-agent-cli
    git config --global alias.somnia-agent '!git-somnia-agent'
    git somnia-agent init
    git somnia-agent secrets set GROQ_API_KEY=your-key

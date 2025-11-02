@@ -4,11 +4,29 @@ This is the command-line tool for interacting with the GitAgent platform on Somn
 
 ## Installation
 
+### Quick Install (For Hackathon/Demo)
+
 ```bash
+# Option 1: Install directly from GitHub
+npm install -g https://github.com/xaviersharwin10/gitAgent.git#main --prefix=./git-agent-cli
+
+# Option 2: Clone and install locally
+git clone https://github.com/xaviersharwin10/gitAgent.git
+cd gitAgent/git-agent-cli
 npm install -g .
+
+# Then set up Git alias
 git config --global alias.somnia-agent '!git-somnia-agent'
 ```
-(For development, use `npm link` in this directory, then set up the alias)
+
+### Development Install
+
+```bash
+npm install -g .
+# Or use npm link for development
+npm link
+git config --global alias.somnia-agent '!git-somnia-agent'
+```
 
 ## Commands
 
