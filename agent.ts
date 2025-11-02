@@ -332,3 +332,4 @@ setInterval(runDecisionLoop, 30000);
 // Restart trigger Sun Nov  2 11:50:44 AM IST 2025
 // Debug trigger
 // Fix REPO_URL issue
+// Test after backend restart
