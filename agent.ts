@@ -196,17 +196,30 @@ async function runDecisionLoop() {
     const isBuy = decision.toUpperCase().includes('BUY');
 
     if (isBuy) {
-      console.log(`[AI Decision] AI decided: BUY. Executing trade on Somnia...`);
+      console.log(`[AI Decision] AI decided: BUY.`);
       
-      // Execute actual trade on Somnia blockchain
-      const tradeResult = await executeTradeOnSomnia();
+      // Conservative strategy: Only execute trades if price is below threshold OR randomly (30% chance)
+      // This makes main branch more selective than aggressive branch
+      const priceBelowThreshold = price < 0.38; // Only buy if price dropped significantly
+      const randomExecution = Math.random() < 0.30; // 30% chance to execute even above threshold
+      const shouldExecuteTrade = priceBelowThreshold || randomExecution;
       
-      if (tradeResult.success && tradeResult.txHash) {
-        console.log(`[Trade] ✅ Trade executed successfully: ${tradeResult.txHash}`);
-        await sendMetric(`BUY - ${decision}`, price, true, tradeResult.txHash, 0.001);
+      if (shouldExecuteTrade) {
+        console.log(`[Trade] ✅ Conservative filter passed (price: $${price.toFixed(4)}, below threshold: ${priceBelowThreshold}). Executing trade...`);
+        
+        // Execute actual trade on Somnia blockchain
+        const tradeResult = await executeTradeOnSomnia();
+        
+        if (tradeResult.success && tradeResult.txHash) {
+          console.log(`[Trade] ✅ Trade executed successfully: ${tradeResult.txHash}`);
+          await sendMetric(`BUY - ${decision}`, price, true, tradeResult.txHash, 0.001);
+        } else {
+          console.log(`[Trade] ⚠️ Trade execution skipped (insufficient funds or key not set)`);
+          await sendMetric(`BUY - ${decision}`, price, false, null, null);
+        }
       } else {
-        console.log(`[Trade] ⚠️ Trade execution skipped (insufficient funds or key not set)`);
-        await sendMetric(`BUY - ${decision}`, price, false, null, null);
+        console.log(`[Trade] 🛡️ Conservative filter blocked trade execution (price: $${price.toFixed(4)} above $0.38 threshold). Holding instead.`);
+        await sendMetric(`BUY (FILTERED) - ${decision}`, price, false, null, null);
       }
     } else {
       console.log(`[AI Decision] AI decided: HOLD.`);
