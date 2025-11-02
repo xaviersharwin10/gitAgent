@@ -233,3 +233,4 @@ async function runDecisionLoop() {
 // Run immediately on start, and then every 30 seconds
 runDecisionLoop();
 setInterval(runDecisionLoop, 30000);
+// Trigger main restart
