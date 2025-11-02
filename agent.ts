@@ -345,3 +345,4 @@ setInterval(runDecisionLoop, 30000);
 // Test after backend restart
 // Force fresh restart with REPO_URL fix
 // Test with delete-and-restart fix
+// Final test - backend fix applied
