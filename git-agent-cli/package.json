@@ -1,0 +1,30 @@
+{
+  "name": "git-somnia-agent",
+  "version": "1.0.0",
+  "description": "Command-line tool for interacting with the GitAgent platform on Somnia",
+  "main": "index.js",
+  "bin": {
+    "git-somnia-agent": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "agent",
+    "cli",
+    "ai",
+    "trading",
+    "blockchain"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.1",
+    "chalk": "^4.1.2",
+    "commander": "^14.0.2",
+    "ethers": "^6.15.0",
+    "inquirer": "^12.10.0",
+    "shelljs": "^0.10.0"
+  }
+}
