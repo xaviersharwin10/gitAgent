@@ -333,3 +333,4 @@ setInterval(runDecisionLoop, 30000);
 // Debug trigger
 // Fix REPO_URL issue
 // Test after backend restart
+// Force fresh restart with REPO_URL fix
