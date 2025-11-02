@@ -167,7 +167,7 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     
     const receipt = await tx.wait();
     console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
-    console.log(`[Trade] 🔗 View on explorer: https://explorer.somnia.network/tx/${tx.hash}`);
+    console.log(`[Trade] 🔗 View on explorer: https://shannon-explorer.somnia.network/tx/${tx.hash}`);
     
     return { success: true, txHash: tx.hash };
   } catch (error) {
