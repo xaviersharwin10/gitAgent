@@ -5,7 +5,8 @@ import axios from 'axios';
 // 1. Load configuration from environment variables (injected by GitAgent backend)
 const groqApiKey = process.env.GROQ_API_KEY;
 const agentContractAddress = process.env.AGENT_CONTRACT_ADDRESS;
-const agentPrompt = process.env.AI_PROMPT || "You are a cautious financial analyst. Based on the price, should I 'BUY' or 'HOLD'?"; // Default prompt
+// Aggressive branch: More risk-tolerant, buys more frequently
+const agentPrompt = process.env.AI_PROMPT || "You are an aggressive degen trader. You look for opportunities to BUY frequently, especially when prices are around support levels or showing momentum. You are willing to take risks for potential gains. Based on the current price, should I 'BUY' or 'HOLD'?"; // Aggressive strategy
 const somniaRpcUrl = process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3005';
 const repoUrl = process.env.REPO_URL || '';
@@ -303,7 +304,7 @@ async function runDecisionLoop() {
         { role: 'user', content: `The current price of SOMI is $${price.toFixed(4)}. Should I BUY or HOLD?` }
       ],
       model: 'llama-3.1-8b-instant',
-      temperature: 0.5,
+      temperature: 0.7, // Higher temperature for more aggressive/varied decisions (aggressive branch)
       max_tokens: 50,
     });
 
