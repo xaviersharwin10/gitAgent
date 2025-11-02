@@ -12,6 +12,16 @@ const repoUrl = process.env.REPO_URL || '';
 const branchName = process.env.BRANCH_NAME || 'main';
 const agentPrivateKey = process.env.AGENT_PRIVATE_KEY || ''; // For signing transactions
 
+// Debug: Log all environment variables related to GitAgent
+console.log('[Environment] === Environment Variables Check ===');
+console.log(`[Environment] REPO_URL: ${repoUrl ? '✅ ' + repoUrl : '❌ NOT SET'}`);
+console.log(`[Environment] BRANCH_NAME: ${branchName ? '✅ ' + branchName : '❌ NOT SET'}`);
+console.log(`[Environment] AGENT_CONTRACT_ADDRESS: ${agentContractAddress ? '✅ ' + agentContractAddress : '❌ NOT SET'}`);
+console.log(`[Environment] AGENT_PRIVATE_KEY: ${agentPrivateKey ? '✅ SET (hidden)' : '❌ NOT SET'}`);
+console.log(`[Environment] BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
+console.log(`[Environment] SOMNIA_RPC_URL: ${process.env.SOMNIA_RPC_URL || 'NOT SET'}`);
+console.log(`[Environment] === End Environment Check ===`);
+
 if (!groqApiKey || !agentContractAddress) {
   console.error('Error: GROQ_API_KEY or AGENT_CONTRACT_ADDRESS is not set.');
   process.exit(1);
