@@ -214,7 +214,7 @@ app.post('/webhook/github', async (req, res) => {
         fs.mkdirSync(agentsDir, { recursive: true });
       }
 
-      const agentPath = path.join(agentsDir, branch_hash.replace('0x', ''));
+      const agentPath = path.join(agentsDir, branch_hash);
 
       if (!fs.existsSync(agentPath)) {
         console.log(`📥 Cloning repository to ${agentPath}...`);
@@ -404,19 +404,22 @@ app.get('/api/agents/:id', async (req, res) => {
 });
 
 // API: Restart agent
-app.post('/api/agents/:id/restart', async (req, res) => {
+app.post('/api/agents/:branch_hash/restart', async (req, res) => {
   try {
-    const agent = await getAgentByBranchHash(req.params.id);
+    const branch_hash = req.params.branch_hash;
+    const agent = await getAgentByBranchHash(branch_hash);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
 
-    const agentPath = path.join(__dirname, 'agents', agent.branch_hash.replace('0x', ''));
+    const agentPath = path.join(__dirname, 'agents', branch_hash);
     if (!fs.existsSync(agentPath)) {
-      return res.status(404).json({ error: 'Agent directory not found' });
+      console.error(`Agent directory not found: ${agentPath}`);
+      return res.status(404).json({ error: `Agent directory not found: ${agentPath}` });
     }
 
-    await startOrReloadAgent(agent, agentPath, agent.branch_hash);
+    console.log(`🔄 Restarting agent ${branch_hash} from ${agentPath}`);
+    await startOrReloadAgent(agent, agentPath, branch_hash);
     res.json({ success: true, message: 'Agent restarted' });
   } catch (error) {
     console.error('Error restarting agent:', error);
@@ -427,9 +430,15 @@ app.post('/api/agents/:id/restart', async (req, res) => {
 // API: Save metrics
 app.post('/api/metrics', async (req, res) => {
   try {
-    const { branch_hash, decision, price, trade_executed, trade_tx_hash, trade_amount } = req.body;
+    let { branch_hash, repo_url, branch_name, decision, price, trade_executed, trade_tx_hash, trade_amount } = req.body;
+    
+    // Calculate branch_hash if not provided (for backward compatibility)
+    if (!branch_hash && repo_url && branch_name) {
+      branch_hash = ethers.id(repo_url + "/" + branch_name);
+    }
+    
     if (!branch_hash || !decision) {
-      return res.status(400).json({ error: 'Missing branch_hash or decision' });
+      return res.status(400).json({ error: 'Missing branch_hash (or repo_url+branch_name) or decision' });
     }
 
     const agent = await getAgentByBranchHash(branch_hash);
