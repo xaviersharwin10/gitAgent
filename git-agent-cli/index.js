@@ -277,49 +277,104 @@ program
     const s1 = result1.stats;
     const s2 = result2.stats;
 
-    console.log(chalk.bold('\n--- Side-by-Side Agent Comparison ---\n'));
-    
-    // Create comparison table
+    // Calculate success rates
+    const successRate1 = s1.total_decisions ? ((s1.trades_executed || 0) / s1.total_decisions * 100).toFixed(1) : '0.0';
+    const successRate2 = s2.total_decisions ? ((s2.trades_executed || 0) / s2.total_decisions * 100).toFixed(1) : '0.0';
+
+    // Helper function to create table row
+    const createRow = (label, val1, val2, maxLabelLen = 20, maxValLen = 15) => {
+      const labelPadded = label.padEnd(maxLabelLen);
+      const val1Str = String(val1).padEnd(maxValLen);
+      const val2Str = String(val2).padEnd(maxValLen);
+      return `│ ${labelPadded} │ ${val1Str} │ ${val2Str} │`;
+    };
+
+    // Prepare metrics with formatting
     const metrics = [
-      { label: 'Total Decisions', v1: s1.total_decisions || 0, v2: s2.total_decisions || 0, format: (v) => v.toString() },
-      { label: 'BUY Signals', v1: s1.buy_count || 0, v2: s2.buy_count || 0, format: (v) => chalk.cyan(v.toString()) },
-      { label: 'HOLD Signals', v1: s1.hold_count || 0, v2: s2.hold_count || 0, format: (v) => chalk.yellow(v.toString()) },
-      { label: 'Trades Executed', v1: s1.trades_executed || 0, v2: s2.trades_executed || 0, format: (v) => chalk.magenta(v.toString()) },
-      { label: 'Avg Price', v1: s1.avg_price || 0, v2: s2.avg_price || 0, format: (v) => `$${parseFloat(v).toFixed(4)}` },
-      { label: 'Success Rate', 
-        v1: s1.total_decisions ? ((s1.trades_executed / s1.total_decisions) * 100).toFixed(1) : '0.0', 
-        v2: s2.total_decisions ? ((s2.trades_executed / s2.total_decisions) * 100).toFixed(1) : '0.0',
-        format: (v) => chalk.green(`${v}%`)
+      { 
+        label: 'Total Decisions', 
+        v1: (s1.total_decisions || 0).toString(), 
+        v2: (s2.total_decisions || 0).toString() 
+      },
+      { 
+        label: 'BUY Signals', 
+        v1: chalk.cyan((s1.buy_count || 0).toString()), 
+        v2: chalk.cyan((s2.buy_count || 0).toString()) 
+      },
+      { 
+        label: 'HOLD Signals', 
+        v1: chalk.yellow((s1.hold_count || 0).toString()), 
+        v2: chalk.yellow((s2.hold_count || 0).toString()) 
+      },
+      { 
+        label: 'Trades Executed', 
+        v1: chalk.magenta((s1.trades_executed || 0).toString()), 
+        v2: chalk.magenta((s2.trades_executed || 0).toString()) 
+      },
+      { 
+        label: 'Avg Price', 
+        v1: chalk.white(`$${parseFloat(s1.avg_price || 0).toFixed(4)}`), 
+        v2: chalk.white(`$${parseFloat(s2.avg_price || 0).toFixed(4)}`) 
+      },
+      { 
+        label: 'Success Rate', 
+        v1: chalk.green(`${successRate1}%`), 
+        v2: chalk.green(`${successRate2}%`) 
       },
     ];
 
-    console.log(`| ${'Metric'.padEnd(18)} | ${chalk.bold(branch1.padEnd(25))} | ${chalk.bold(branch2.padEnd(25))} |`);
-    console.log('|' + '-'.repeat(20) + '|' + '-'.repeat(27) + '|' + '-'.repeat(27) + '|');
-    
-    metrics.forEach(m => {
-      const v1Str = m.format(m.v1);
-      const v2Str = m.format(m.v2);
-      console.log(`| ${m.label.padEnd(18)} | ${v1Str.padEnd(25)} | ${v2Str.padEnd(25)} |`);
+    // Table width calculations
+    const maxLabelLen = Math.max(...metrics.map(m => m.label.length), 15);
+    const maxBranchLen = Math.max(branch1.length, branch2.length, 15);
+    const tableWidth = maxLabelLen + (maxBranchLen * 2) + 13; // 13 = borders and padding
+
+    // Header
+    console.log('\n' + chalk.bold.cyan('╔' + '═'.repeat(tableWidth - 2) + '╗'));
+    console.log(chalk.bold.cyan('║') + chalk.bold.white('  Agent Performance Comparison'.padEnd(tableWidth - 4)) + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('╠' + '═'.repeat(maxLabelLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╣'));
+    console.log(chalk.bold.cyan('║') + ' Metric'.padEnd(maxLabelLen + 1) + 
+                chalk.bold.cyan('║') + ` ${chalk.bold(branch1)}`.padEnd(maxBranchLen + 1) + 
+                chalk.bold.cyan('║') + ` ${chalk.bold(branch2)}`.padEnd(maxBranchLen + 1) + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('╠' + '═'.repeat(maxLabelLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╣'));
+
+    // Data rows
+    metrics.forEach((m, index) => {
+      const labelPadded = ` ${m.label}`.padEnd(maxLabelLen + 1);
+      const v1Padded = ` ${m.v1}`.padEnd(maxBranchLen + 1);
+      const v2Padded = ` ${m.v2}`.padEnd(maxBranchLen + 1);
+      console.log(chalk.bold.cyan('║') + labelPadded + 
+                  chalk.bold.cyan('║') + v1Padded + 
+                  chalk.bold.cyan('║') + v2Padded + chalk.bold.cyan('║'));
     });
 
-    // Determine winner
-    console.log('\n' + chalk.bold('🏆 Winner Analysis:'));
-    if ((s1.trades_executed || 0) > (s2.trades_executed || 0)) {
-      console.log(chalk.green(`  ${branch1} has executed more trades`));
-    } else if ((s2.trades_executed || 0) > (s1.trades_executed || 0)) {
-      console.log(chalk.green(`  ${branch2} has executed more trades`));
+    // Footer
+    console.log(chalk.bold.cyan('╚' + '═'.repeat(maxLabelLen + 3) + '╩' + '═'.repeat(maxBranchLen + 3) + '╩' + '═'.repeat(maxBranchLen + 3) + '╝'));
+
+    // Winner Analysis
+    console.log('\n' + chalk.bold.cyan('🏆  Winner Analysis'));
+    console.log(chalk.gray('─'.repeat(50)));
+    
+    const trades1 = s1.trades_executed || 0;
+    const trades2 = s2.trades_executed || 0;
+    const rate1 = parseFloat(successRate1);
+    const rate2 = parseFloat(successRate2);
+
+    if (trades1 > trades2) {
+      console.log(chalk.green(`✓ ${branch1} executed more trades: ${trades1} vs ${trades2}`));
+    } else if (trades2 > trades1) {
+      console.log(chalk.green(`✓ ${branch2} executed more trades: ${trades2} vs ${trades1}`));
     } else {
-      console.log(chalk.yellow(`  Both branches have similar trade execution`));
+      console.log(chalk.yellow(`= Both branches executed ${trades1} trades`));
     }
 
-    if (s1.total_decisions && s2.total_decisions) {
-      const rate1 = (s1.trades_executed / s1.total_decisions) * 100;
-      const rate2 = (s2.trades_executed / s2.total_decisions) * 100;
+    if (s1.total_decisions && s2.total_decisions && rate1 !== rate2) {
       if (rate1 > rate2) {
-        console.log(chalk.green(`  ${branch1} has better success rate (${rate1.toFixed(1)}% vs ${rate2.toFixed(1)}%)`));
-      } else if (rate2 > rate1) {
-        console.log(chalk.green(`  ${branch2} has better success rate (${rate2.toFixed(1)}% vs ${rate1.toFixed(1)}%)`));
+        console.log(chalk.green(`✓ ${branch1} has better success rate: ${rate1}% vs ${rate2}%`));
+      } else {
+        console.log(chalk.green(`✓ ${branch2} has better success rate: ${rate2}% vs ${rate1}%`));
       }
+    } else if (rate1 === rate2 && rate1 > 0) {
+      console.log(chalk.yellow(`= Both branches have the same success rate: ${rate1}%`));
     }
   });
 
