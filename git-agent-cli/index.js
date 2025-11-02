@@ -353,9 +353,9 @@ program
     const totalWidth = col1Width + col2Width + col3Width + 2; // +2 for borders
 
     // Header
-    console.log('\n' + chalk.bold.cyan('╔' + '═'.repeat(totalWidth - 2) + '╗'));
+    console.log('\n' + chalk.bold.cyan('╔' + '═'.repeat(totalWidth) + '╗'));
     const title = '  Agent Performance Comparison';
-    console.log(chalk.bold.cyan('║') + chalk.bold.white(title.padEnd(totalWidth - 4)) + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('║') + chalk.bold.white(title.padEnd(totalWidth)) + chalk.bold.cyan('║'));
     console.log(chalk.bold.cyan('╠' + '═'.repeat(col1Width) + '╬' + '═'.repeat(col2Width) + '╬' + '═'.repeat(col3Width) + '╣'));
     
     // Column headers
