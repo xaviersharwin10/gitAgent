@@ -357,9 +357,15 @@ async function startOrReloadAgent(agent, agentPath, branch_hash = null) {
 // API: Save secrets
 app.post('/api/secrets', async (req, res) => {
   try {
-    const { branch_hash, key, value } = req.body;
+    let { branch_hash, repo_url, branch_name, key, value } = req.body;
+    
+    // Calculate branch_hash if not provided (for backward compatibility)
+    if (!branch_hash && repo_url && branch_name) {
+      branch_hash = ethers.id(repo_url + "/" + branch_name);
+    }
+    
     if (!branch_hash || !key || !value) {
-      return res.status(400).json({ error: 'Missing branch_hash, key, or value' });
+      return res.status(400).json({ error: 'Missing branch_hash (or repo_url+branch_name), key, or value' });
     }
 
     const agent = await getAgentByBranchHash(branch_hash);
