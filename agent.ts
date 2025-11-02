@@ -224,12 +224,11 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
       return { success: false, txHash: null };
     }
 
-    // Use a small amount for the swap (e.g., 1% of balance or minimum)
-    const amountIn = tokenBalance > ethers.parseUnits("100", 18) 
-      ? tokenBalance / 100n  // 1% of balance
-      : tokenBalance;
+    // ALWAYS limit to max 1% of balance to prevent swapping everything
+    const onePercent = tokenBalance / 100n; // Always calculate 1%
+    const amountIn = onePercent; // Never swap more than 1%
     
-    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens`);
+    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens (1% of ${ethers.formatUnits(tokenBalance, 18)} total balance)`);
 
     // Get expected output amount
     const path = [TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS];
