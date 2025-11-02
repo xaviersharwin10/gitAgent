@@ -102,7 +102,7 @@ async function sendMetric(decision: string, price: number, tradeExecuted: boolea
   }
 }
 
-// 5. Execute a trade on Somnia
+// 5. Execute a trade on Somnia using DEX Router
 async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: string | null }> {
   if (!agentWallet) {
     console.warn('[Trade] Agent private key not set, skipping trade execution');
@@ -117,29 +117,90 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     console.log(`[Trade] Agent contract balance: ${ethers.formatEther(contractBalance)} SOMI`);
     console.log(`[Trade] Wallet balance: ${ethers.formatEther(walletBalance)} SOMI`);
 
-    // For demo: Send a small amount to the contract (proving agent can receive funds)
-    // In production, this would be a DEX swap via contract.execute()
-    const amount = ethers.parseEther("0.001");
+    // Somnia DEX Router configuration
+    // TODO: Replace with actual deployed SomniaRouter address
+    const SOMNIA_ROUTER_ADDRESS = process.env.SOMNIA_ROUTER_ADDRESS || '0x0000000000000000000000000000000000000000';
+    const TOKEN_IN_ADDRESS = process.env.TOKEN_IN_ADDRESS || ethers.ZeroAddress; // e.g., wSTT
+    const TOKEN_OUT_ADDRESS = process.env.TOKEN_OUT_ADDRESS || ethers.ZeroAddress; // e.g., USDC
     
-    if (walletBalance < amount + ethers.parseEther("0.0001")) { // Need gas + amount
-      console.warn('[Trade] Insufficient wallet balance for trade');
+    if (SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' || 
+        TOKEN_IN_ADDRESS === ethers.ZeroAddress || 
+        TOKEN_OUT_ADDRESS === ethers.ZeroAddress) {
+      console.warn('[Trade] DEX configuration not set. Using fallback: sending SOMI to contract.');
+      // Fallback: Simple token transfer if DEX not configured
+      const amount = ethers.parseEther("0.001");
+      if (walletBalance < amount + ethers.parseEther("0.0001")) {
+        console.warn('[Trade] Insufficient wallet balance for trade');
+        return { success: false, txHash: null };
+      }
+      const tx = await agentWallet.sendTransaction({
+        to: agentContractAddress as string,
+        value: amount,
+      });
+      const receipt = await tx.wait();
+      console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
+      return { success: true, txHash: tx.hash };
+    }
+
+    // SomniaRouter ABI (simplified - just swap function)
+    const ROUTER_ABI = [
+      "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+      "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)"
+    ];
+
+    const router = new ethers.Contract(SOMNIA_ROUTER_ADDRESS, ROUTER_ABI, agentWallet);
+    
+    // ERC20 ABI for token operations
+    const ERC20_ABI = [
+      "function balanceOf(address account) external view returns (uint256)",
+      "function approve(address spender, uint256 amount) external returns (bool)",
+      "function allowance(address owner, address spender) external view returns (uint256)"
+    ];
+
+    const tokenIn = new ethers.Contract(TOKEN_IN_ADDRESS, ERC20_ABI, agentWallet);
+    
+    // Check token balance
+    const tokenBalance = await tokenIn.balanceOf(agentWallet.address);
+    if (tokenBalance === 0n) {
+      console.warn('[Trade] No tokens to swap');
       return { success: false, txHash: null };
     }
 
-    // Execute transaction: Send SOMI to agent contract (proof of execution)
-    // This demonstrates the agent can receive and hold funds on-chain
-    // In production, you'd use: agentContract.connect(agentWallet).execute(DEX_ADDRESS, swapData)
-    const tx = await agentWallet.sendTransaction({
-      to: agentContractAddress as string,
-      value: amount,
-      // No data needed - simple ETH transfer to contract
-    });
+    // Use a small amount for the swap (e.g., 1% of balance or minimum)
+    const amountIn = tokenBalance > ethers.parseUnits("100", 18) 
+      ? tokenBalance / 100n  // 1% of balance
+      : tokenBalance;
 
-    console.log(`[Trade] 📤 Transaction sent to Somnia: ${tx.hash}`);
+    // Get expected output amount
+    const path = [TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS];
+    const amountsOut = await router.getAmountsOut(amountIn, path);
+    const amountOutMin = amountsOut[1] * 95n / 100n; // 5% slippage tolerance
+
+    // Approve router to spend tokens
+    const allowance = await tokenIn.allowance(agentWallet.address, SOMNIA_ROUTER_ADDRESS);
+    if (allowance < amountIn) {
+      console.log('[Trade] Approving router to spend tokens...');
+      const approveTx = await tokenIn.approve(SOMNIA_ROUTER_ADDRESS, ethers.MaxUint256);
+      await approveTx.wait();
+    }
+
+    // Execute swap via router
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from now
+    console.log(`[Trade] Executing swap: ${ethers.formatUnits(amountIn, 18)} tokens via SomniaRouter...`);
+    
+    const tx = await router.swapExactTokensForTokens(
+      amountIn,
+      amountOutMin,
+      path,
+      agentWallet.address, // Send tokens to wallet (or use agentContractAddress)
+      deadline
+    );
+
+    console.log(`[Trade] 📤 Swap transaction sent: ${tx.hash}`);
     console.log(`[Trade] Waiting for confirmation...`);
     
     const receipt = await tx.wait();
-    console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
+    console.log(`[Trade] ✅ Swap confirmed in block ${receipt?.blockNumber}`);
     console.log(`[Trade] 🔗 View on explorer: https://explorer.somnia.network/tx/${tx.hash}`);
     
     return { success: true, txHash: tx.hash };

@@ -30,9 +30,12 @@ This agent runs a loop every 30 seconds:
 
 ## Deploying with GitAgent
 
-1. Push this repo to GitHub.
-2. Use `git agent init` and `git agent secrets set GROQ_API_KEY=...`
-3. `git push` to deploy!
+1. **Fork/Clone this template** to your own GitHub repository
+2. **Add your dependencies** to `package.json` if you need new packages
+3. Use `git agent init` and `git agent secrets set GROQ_API_KEY=...`
+4. `git push` to deploy!
+
+> **Note**: When you push, the backend automatically runs `npm install` to install all dependencies from `package.json`. Make sure to add any new packages you import to `package.json`!
 
 ## Environment Variables
 
@@ -58,6 +61,28 @@ You can customize the agent by:
 2. **Modifying the Price Feed**: Update the `getSomiPrice()` function
 3. **Adding Real Trading Logic**: Implement actual blockchain interactions
 4. **Adjusting Timing**: Change the interval in `setInterval(runDecisionLoop, 30000)`
+5. **Adding Dependencies**: 
+   - Add packages to `package.json`: `npm install <package-name> --save`
+   - Import them in your code
+   - The backend will install them automatically when you push
+
+## Adding New Dependencies
+
+If you add new imports (like `ethers`, `axios`, etc.), make sure to:
+
+1. Install them locally first: `npm install <package-name> --save`
+2. This updates your `package.json` automatically
+3. Commit the updated `package.json` and `package-lock.json`
+4. Push to GitHub - the backend will run `npm install` automatically
+
+Example:
+```bash
+npm install somnia-sdk --save
+# Use it in agent.ts: import { SomniaSDK } from 'somnia-sdk';
+git add package.json package-lock.json agent.ts
+git commit -m "Add Somnia SDK"
+git push
+```
 
 ## Example Output
 
@@ -70,3 +95,4 @@ Prompt: "You are a cautious financial analyst. Based on the price, should I 'BUY
 [AI Decision] AI decided: BUY. Executing trade...
 ```
 # Reload test
+# Updated
