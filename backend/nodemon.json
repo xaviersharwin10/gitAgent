@@ -1,0 +1,11 @@
+{
+  "watch": ["."],
+  "ignore": [
+    "agents/*",
+    "db.sqlite",
+    "db.sqlite-journal",
+    "node_modules"
+  ],
+  "ext": "js,json,ts"
+}
+
