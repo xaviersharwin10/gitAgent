@@ -5,12 +5,24 @@ import axios from 'axios';
 // 1. Load configuration from environment variables (injected by GitAgent backend)
 const groqApiKey = process.env.GROQ_API_KEY;
 const agentContractAddress = process.env.AGENT_CONTRACT_ADDRESS;
-const agentPrompt = process.env.AI_PROMPT || "You are a cautious financial analyst. Based on the price, should I 'BUY' or 'HOLD'?"; // Default prompt
+// Main branch: Conservative strategy - only buy on significant dips
+const agentPrompt = process.env.AI_PROMPT || "You are a conservative risk-averse financial analyst. You only BUY when the price has dropped significantly (below $0.38) or shows strong upward momentum. Otherwise, you HOLD to preserve capital. Based on the current price, should I 'BUY' or 'HOLD'?";
 const somniaRpcUrl = process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3005';
 const repoUrl = process.env.REPO_URL || '';
 const branchName = process.env.BRANCH_NAME || 'main';
 const agentPrivateKey = process.env.AGENT_PRIVATE_KEY || ''; // For signing transactions
+
+// Debug: Log all environment variables related to GitAgent
+console.log('[Environment] === Environment Variables Check ===');
+console.log(`[Environment] REPO_URL: ${repoUrl ? '✅ ' + repoUrl : '❌ NOT SET'}`);
+console.log(`[Environment] BRANCH_NAME: ${branchName ? '✅ ' + branchName : '❌ NOT SET'}`);
+console.log(`[Environment] AGENT_CONTRACT_ADDRESS: ${agentContractAddress ? '✅ ' + agentContractAddress : '❌ NOT SET'}`);
+console.log(`[Environment] AGENT_PRIVATE_KEY: ${agentPrivateKey ? '✅ SET (hidden)' : '❌ NOT SET'}`);
+console.log(`[Environment] BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
+console.log(`[Environment] SOMNIA_RPC_URL: ${process.env.SOMNIA_RPC_URL || 'NOT SET'}`);
+console.log(`[Environment] Strategy: Conservative (Main Branch)`);
+console.log(`[Environment] === End Environment Check ===`);
 
 if (!groqApiKey || !agentContractAddress) {
   console.error('Error: GROQ_API_KEY or AGENT_CONTRACT_ADDRESS is not set.');
@@ -22,6 +34,31 @@ const groq = new Groq({ apiKey: groqApiKey });
 
 // Connect to Somnia provider
 const provider = new ethers.JsonRpcProvider(somniaRpcUrl);
+
+// Verify network connection
+provider.getNetwork().then((network) => {
+  console.log(`🌐 Connected to Somnia Testnet`);
+  console.log(`   Chain ID: ${network.chainId}`);
+  console.log(`   RPC URL: ${somniaRpcUrl}`);
+  if (network.chainId !== 50312n) {
+    console.warn(`⚠️  Warning: Expected chain ID 50312 (testnet), got ${network.chainId}`);
+  }
+}).catch((err) => {
+  console.error(`❌ Failed to connect to network: ${err.message}`);
+});
+
+// Create wallet if private key is available
+let agentWallet: ethers.Wallet | null = null;
+if (agentPrivateKey) {
+  agentWallet = new ethers.Wallet(agentPrivateKey, provider);
+  console.log(`📝 Agent wallet connected: ${agentWallet.address}`);
+} else {
+  console.log(`⚠️  AGENT_PRIVATE_KEY not set - trades will be skipped`);
+  console.log(`💡 Set secret: git agent secrets set AGENT_PRIVATE_KEY=0x...`);
+}
+
+console.log(`🤖 AI Agent ${agentContractAddress} starting...`);
+console.log(`Prompt: "${agentPrompt}"`);
 
 // Agent contract ABI (minimal for execute function)
 const AGENT_ABI = [
@@ -161,7 +198,7 @@ async function runDecisionLoop() {
         { role: 'user', content: `The current price of SOMI is $${price.toFixed(4)}. Should I BUY or HOLD?` }
       ],
       model: 'llama-3.1-8b-instant',
-      temperature: 0.5,
+      temperature: 0.3, // Lower temperature for more conservative decisions (main branch)
       max_tokens: 50,
     });
 
