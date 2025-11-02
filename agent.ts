@@ -23,6 +23,18 @@ const groq = new Groq({ apiKey: groqApiKey });
 // Connect to Somnia provider
 const provider = new ethers.JsonRpcProvider(somniaRpcUrl);
 
+// Verify network connection
+provider.getNetwork().then((network) => {
+  console.log(`🌐 Connected to Somnia Testnet`);
+  console.log(`   Chain ID: ${network.chainId}`);
+  console.log(`   RPC URL: ${somniaRpcUrl}`);
+  if (network.chainId !== 50312n) {
+    console.warn(`⚠️  Warning: Expected chain ID 50312 (testnet), got ${network.chainId}`);
+  }
+}).catch((err) => {
+  console.error(`❌ Failed to connect to network: ${err.message}`);
+});
+
 // Agent contract ABI (minimal for execute function)
 const AGENT_ABI = [
   "function execute(address target, bytes calldata data) external returns (bytes memory)"
@@ -36,6 +48,9 @@ let agentWallet: ethers.Wallet | null = null;
 if (agentPrivateKey) {
   agentWallet = new ethers.Wallet(agentPrivateKey, provider);
   console.log(`📝 Agent wallet connected: ${agentWallet.address}`);
+} else {
+  console.log(`⚠️  AGENT_PRIVATE_KEY not set - trades will be skipped`);
+  console.log(`💡 Set secret: git agent secrets set AGENT_PRIVATE_KEY=0x...`);
 }
 
 console.log(`🤖 AI Agent ${agentContractAddress} starting...`);
@@ -104,41 +119,65 @@ async function sendMetric(decision: string, price: number, tradeExecuted: boolea
 
 // 5. Execute a trade on Somnia using DEX Router
 async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: string | null }> {
+  console.log('[Trade] 🔍 === Trade Execution Diagnostic ===');
+  
+  // Check 1: Agent Wallet
   if (!agentWallet) {
-    console.warn('[Trade] Agent private key not set, skipping trade execution');
-    console.warn('[Trade] Set AGENT_PRIVATE_KEY secret to enable trade execution');
+    console.warn('[Trade] ❌ AGENT_PRIVATE_KEY not set in environment');
+    console.warn('[Trade] 💡 Fix: Set secret: git agent secrets set AGENT_PRIVATE_KEY=0x...');
+    console.warn('[Trade] ⚠️  Skipping trade execution');
     return { success: false, txHash: null };
   }
+  console.log(`[Trade] ✅ Agent wallet initialized: ${agentWallet.address}`);
 
   try {
     // Get contract balance
     const contractBalance = await provider.getBalance(agentContractAddress as string);
     const walletBalance = await provider.getBalance(agentWallet.address);
-    console.log(`[Trade] Agent contract balance: ${ethers.formatEther(contractBalance)} SOMI`);
-    console.log(`[Trade] Wallet balance: ${ethers.formatEther(walletBalance)} SOMI`);
+    console.log(`[Trade] 📊 Balance Check:`);
+    console.log(`[Trade]    Agent Contract: ${ethers.formatEther(contractBalance)} SOMI`);
+    console.log(`[Trade]    Wallet:         ${ethers.formatEther(walletBalance)} SOMI`);
 
     // Somnia DEX Router configuration
-    // TODO: Replace with actual deployed SomniaRouter address
     const SOMNIA_ROUTER_ADDRESS = process.env.SOMNIA_ROUTER_ADDRESS || '0x0000000000000000000000000000000000000000';
-    const TOKEN_IN_ADDRESS = process.env.TOKEN_IN_ADDRESS || ethers.ZeroAddress; // e.g., wSTT
-    const TOKEN_OUT_ADDRESS = process.env.TOKEN_OUT_ADDRESS || ethers.ZeroAddress; // e.g., USDC
+    const TOKEN_IN_ADDRESS = process.env.TOKEN_IN_ADDRESS || ethers.ZeroAddress;
+    const TOKEN_OUT_ADDRESS = process.env.TOKEN_OUT_ADDRESS || ethers.ZeroAddress;
+    
+    console.log(`[Trade] 🔧 DEX Configuration (Somnia Testnet):`);
+    console.log(`[Trade]    Router: ${SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' ? '❌ NOT SET' : '✅ ' + SOMNIA_ROUTER_ADDRESS}`);
+    console.log(`[Trade]    Token In (NIA):  ${TOKEN_IN_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_IN_ADDRESS}`);
+    console.log(`[Trade]    Token Out (USDT): ${TOKEN_OUT_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_OUT_ADDRESS}`);
+    console.log(`[Trade]    Network: Somnia Testnet (Chain ID: 50312)`);
     
     if (SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' || 
         TOKEN_IN_ADDRESS === ethers.ZeroAddress || 
         TOKEN_OUT_ADDRESS === ethers.ZeroAddress) {
-      console.warn('[Trade] DEX configuration not set. Using fallback: sending SOMI to contract.');
+      console.log(`[Trade] 📝 Using fallback mode: Simple SOMI transfer to contract`);
+      console.log(`[Trade] 💡 To enable DEX swaps, set: SOMNIA_ROUTER_ADDRESS, TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS`);
+      
       // Fallback: Simple token transfer if DEX not configured
       const amount = ethers.parseEther("0.001");
-      if (walletBalance < amount + ethers.parseEther("0.0001")) {
-        console.warn('[Trade] Insufficient wallet balance for trade');
+      const requiredBalance = amount + ethers.parseEther("0.0001"); // amount + gas
+      console.log(`[Trade] 💰 Required balance: ${ethers.formatEther(requiredBalance)} SOMI (0.001 + 0.0001 for gas)`);
+      
+      if (walletBalance < requiredBalance) {
+        console.warn(`[Trade] ❌ Insufficient wallet balance`);
+        console.warn(`[Trade]    Available: ${ethers.formatEther(walletBalance)} SOMI`);
+        console.warn(`[Trade]    Required: ${ethers.formatEther(requiredBalance)} SOMI`);
+        console.warn(`[Trade] 💡 Fix: Fund your wallet address ${agentWallet.address} with SOMI tokens`);
         return { success: false, txHash: null };
       }
+      
+      console.log(`[Trade] ✅ Balance sufficient, executing fallback transfer...`);
       const tx = await agentWallet.sendTransaction({
         to: agentContractAddress as string,
         value: amount,
       });
+      console.log(`[Trade] 📤 Transaction sent: ${tx.hash}`);
+      console.log(`[Trade] ⏳ Waiting for confirmation...`);
       const receipt = await tx.wait();
       console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
+      console.log(`[Trade] 🔗 Explorer: https://explorer.somnia.network/tx/${tx.hash}`);
       return { success: true, txHash: tx.hash };
     }
 
@@ -157,12 +196,21 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
       "function allowance(address owner, address spender) external view returns (uint256)"
     ];
 
+    console.log(`[Trade] ✅ DEX configured, proceeding with swap on Somnia Testnet...`);
+    console.log(`[Trade] 📋 Trade Details:`);
+    console.log(`[Trade]    Selling: NIA (Token In)`);
+    console.log(`[Trade]    Buying: USDT (Token Out)`);
+    
     const tokenIn = new ethers.Contract(TOKEN_IN_ADDRESS, ERC20_ABI, agentWallet);
     
     // Check token balance
+    console.log(`[Trade] 🔍 Checking NIA token balance for wallet ${agentWallet.address}...`);
     const tokenBalance = await tokenIn.balanceOf(agentWallet.address);
+    console.log(`[Trade]    NIA balance: ${ethers.formatUnits(tokenBalance, 18)} NIA tokens`);
+    
     if (tokenBalance === 0n) {
-      console.warn('[Trade] No tokens to swap');
+      console.warn('[Trade] ❌ No tokens to swap');
+      console.warn(`[Trade] 💡 Fix: Send tokens to wallet ${agentWallet.address}`);
       return { success: false, txHash: null };
     }
 
@@ -170,23 +218,40 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     const amountIn = tokenBalance > ethers.parseUnits("100", 18) 
       ? tokenBalance / 100n  // 1% of balance
       : tokenBalance;
+    
+    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens`);
 
     // Get expected output amount
     const path = [TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS];
+    console.log(`[Trade] 🔍 Getting expected output amount...`);
     const amountsOut = await router.getAmountsOut(amountIn, path);
     const amountOutMin = amountsOut[1] * 95n / 100n; // 5% slippage tolerance
+    console.log(`[Trade]    Expected output: ${ethers.formatUnits(amountsOut[1], 18)} tokens`);
+    console.log(`[Trade]    Min output (5% slippage): ${ethers.formatUnits(amountOutMin, 18)} tokens`);
 
     // Approve router to spend tokens
+    console.log(`[Trade] 🔍 Checking token allowance...`);
     const allowance = await tokenIn.allowance(agentWallet.address, SOMNIA_ROUTER_ADDRESS);
+    console.log(`[Trade]    Current allowance: ${ethers.formatUnits(allowance, 18)} tokens`);
+    
     if (allowance < amountIn) {
-      console.log('[Trade] Approving router to spend tokens...');
+      console.log(`[Trade] 📝 Approving router to spend tokens...`);
       const approveTx = await tokenIn.approve(SOMNIA_ROUTER_ADDRESS, ethers.MaxUint256);
+      console.log(`[Trade]    Approval tx: ${approveTx.hash}`);
       await approveTx.wait();
+      console.log(`[Trade] ✅ Approval confirmed`);
+    } else {
+      console.log(`[Trade] ✅ Sufficient allowance already set`);
     }
 
     // Execute swap via router
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from now
-    console.log(`[Trade] Executing swap: ${ethers.formatUnits(amountIn, 18)} tokens via SomniaRouter...`);
+    console.log(`[Trade] 🚀 Executing swap on Somnia Testnet DEX...`);
+    console.log(`[Trade]    Swap: NIA → USDT`);
+    console.log(`[Trade]    Amount: ${ethers.formatUnits(amountIn, 18)} NIA`);
+    console.log(`[Trade]    Expected: ~${ethers.formatUnits(amountsOut[1], 18)} USDT`);
+    console.log(`[Trade]    Router: ${SOMNIA_ROUTER_ADDRESS}`);
+    console.log(`[Trade]    Deadline: ${new Date(deadline * 1000).toISOString()}`);
     
     const tx = await router.swapExactTokensForTokens(
       amountIn,
@@ -197,16 +262,23 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     );
 
     console.log(`[Trade] 📤 Swap transaction sent: ${tx.hash}`);
-    console.log(`[Trade] Waiting for confirmation...`);
+    console.log(`[Trade] ⏳ Waiting for confirmation...`);
     
     const receipt = await tx.wait();
     console.log(`[Trade] ✅ Swap confirmed in block ${receipt?.blockNumber}`);
-    console.log(`[Trade] 🔗 View on explorer: https://explorer.somnia.network/tx/${tx.hash}`);
+    console.log(`[Trade] 🔗 Explorer: https://explorer.somnia.network/tx/${tx.hash}`);
+    console.log(`[Trade] ✨ === Trade Execution Complete ===`);
     
     return { success: true, txHash: tx.hash };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[Trade] ❌ Error executing trade: ${errorMessage}`);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error(`[Trade] ❌ === Trade Execution Failed ===`);
+    console.error(`[Trade] ❌ Error: ${errorMessage}`);
+    if (errorStack) {
+      console.error(`[Trade] 📚 Stack trace: ${errorStack}`);
+    }
+    console.error(`[Trade] 💡 Check: Wallet balance, token balance, router address, network connection`);
     return { success: false, txHash: null };
   }
 }
