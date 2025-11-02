@@ -68,16 +68,6 @@ const AGENT_ABI = [
 // Initialize agent contract
 const agentContract = new ethers.Contract(agentContractAddress, AGENT_ABI, provider);
 
-// Create wallet if private key is available
-let agentWallet: ethers.Wallet | null = null;
-if (agentPrivateKey) {
-  agentWallet = new ethers.Wallet(agentPrivateKey, provider);
-  console.log(`📝 Agent wallet connected: ${agentWallet.address}`);
-}
-
-console.log(`🤖 AI Agent ${agentContractAddress} starting...`);
-console.log(`Prompt: "${agentPrompt}"`);
-
 // 3. Real Price Feed - Fetch from CoinGecko API
 async function getSomiPrice(): Promise<number> {
   try {
