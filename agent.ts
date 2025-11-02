@@ -329,3 +329,4 @@ async function runDecisionLoop() {
 // Run immediately on start, and then every 30 seconds
 runDecisionLoop();
 setInterval(runDecisionLoop, 30000);
+// Restart trigger Sun Nov  2 11:50:44 AM IST 2025
