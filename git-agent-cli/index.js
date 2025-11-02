@@ -281,74 +281,117 @@ program
     const successRate1 = s1.total_decisions ? ((s1.trades_executed || 0) / s1.total_decisions * 100).toFixed(1) : '0.0';
     const successRate2 = s2.total_decisions ? ((s2.trades_executed || 0) / s2.total_decisions * 100).toFixed(1) : '0.0';
 
-    // Helper function to create table row
-    const createRow = (label, val1, val2, maxLabelLen = 20, maxValLen = 15) => {
-      const labelPadded = label.padEnd(maxLabelLen);
-      const val1Str = String(val1).padEnd(maxValLen);
-      const val2Str = String(val2).padEnd(maxValLen);
-      return `│ ${labelPadded} │ ${val1Str} │ ${val2Str} │`;
-    };
+    // Helper to strip ANSI colors for length calculation
+    const stripAnsi = (str) => str.replace(/\x1b\[[0-9;]*m/g, '');
 
-    // Prepare metrics with formatting
+    // Prepare raw values for width calculation
+    const rawValues = [
+      { label: 'Total Decisions', v1: (s1.total_decisions || 0).toString(), v2: (s2.total_decisions || 0).toString() },
+      { label: 'BUY Signals', v1: (s1.buy_count || 0).toString(), v2: (s2.buy_count || 0).toString() },
+      { label: 'HOLD Signals', v1: (s1.hold_count || 0).toString(), v2: (s2.hold_count || 0).toString() },
+      { label: 'Trades Executed', v1: (s1.trades_executed || 0).toString(), v2: (s2.trades_executed || 0).toString() },
+      { label: 'Avg Price', v1: `$${parseFloat(s1.avg_price || 0).toFixed(4)}`, v2: `$${parseFloat(s2.avg_price || 0).toFixed(4)}` },
+      { label: 'Success Rate', v1: `${successRate1}%`, v2: `${successRate2}%` },
+    ];
+
+    // Calculate column widths (using raw values without colors)
+    const maxLabelLen = Math.max(...rawValues.map(m => m.label.length), 15);
+    const maxVal1Len = Math.max(...rawValues.map(m => m.v1.length), branch1.length, 10);
+    const maxVal2Len = Math.max(...rawValues.map(m => m.v2.length), branch2.length, 10);
+    const maxValLen = Math.max(maxVal1Len, maxVal2Len, 12);
+
+    // Prepare formatted metrics
     const metrics = [
       { 
         label: 'Total Decisions', 
         v1: (s1.total_decisions || 0).toString(), 
-        v2: (s2.total_decisions || 0).toString() 
+        v2: (s2.total_decisions || 0).toString(),
+        color1: chalk.white,
+        color2: chalk.white
       },
       { 
         label: 'BUY Signals', 
-        v1: chalk.cyan((s1.buy_count || 0).toString()), 
-        v2: chalk.cyan((s2.buy_count || 0).toString()) 
+        v1: (s1.buy_count || 0).toString(), 
+        v2: (s2.buy_count || 0).toString(),
+        color1: chalk.cyan,
+        color2: chalk.cyan
       },
       { 
         label: 'HOLD Signals', 
-        v1: chalk.yellow((s1.hold_count || 0).toString()), 
-        v2: chalk.yellow((s2.hold_count || 0).toString()) 
+        v1: (s1.hold_count || 0).toString(), 
+        v2: (s2.hold_count || 0).toString(),
+        color1: chalk.yellow,
+        color2: chalk.yellow
       },
       { 
         label: 'Trades Executed', 
-        v1: chalk.magenta((s1.trades_executed || 0).toString()), 
-        v2: chalk.magenta((s2.trades_executed || 0).toString()) 
+        v1: (s1.trades_executed || 0).toString(), 
+        v2: (s2.trades_executed || 0).toString(),
+        color1: chalk.magenta,
+        color2: chalk.magenta
       },
       { 
         label: 'Avg Price', 
-        v1: chalk.white(`$${parseFloat(s1.avg_price || 0).toFixed(4)}`), 
-        v2: chalk.white(`$${parseFloat(s2.avg_price || 0).toFixed(4)}`) 
+        v1: `$${parseFloat(s1.avg_price || 0).toFixed(4)}`, 
+        v2: `$${parseFloat(s2.avg_price || 0).toFixed(4)}`,
+        color1: chalk.white,
+        color2: chalk.white
       },
       { 
         label: 'Success Rate', 
-        v1: chalk.green(`${successRate1}%`), 
-        v2: chalk.green(`${successRate2}%`) 
+        v1: `${successRate1}%`, 
+        v2: `${successRate2}%`,
+        color1: chalk.green,
+        color2: chalk.green
       },
     ];
 
-    // Table width calculations
-    const maxLabelLen = Math.max(...metrics.map(m => m.label.length), 15);
-    const maxBranchLen = Math.max(branch1.length, branch2.length, 15);
-    const tableWidth = maxLabelLen + (maxBranchLen * 2) + 13; // 13 = borders and padding
+    // Build table borders
+    const col1Width = maxLabelLen + 2; // +2 for padding
+    const col2Width = maxValLen + 2;
+    const col3Width = maxValLen + 2;
+    const totalWidth = col1Width + col2Width + col3Width + 2; // +2 for borders
 
     // Header
-    console.log('\n' + chalk.bold.cyan('╔' + '═'.repeat(tableWidth - 2) + '╗'));
-    console.log(chalk.bold.cyan('║') + chalk.bold.white('  Agent Performance Comparison'.padEnd(tableWidth - 4)) + chalk.bold.cyan('║'));
-    console.log(chalk.bold.cyan('╠' + '═'.repeat(maxLabelLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╣'));
-    console.log(chalk.bold.cyan('║') + ' Metric'.padEnd(maxLabelLen + 1) + 
-                chalk.bold.cyan('║') + ` ${chalk.bold(branch1)}`.padEnd(maxBranchLen + 1) + 
-                chalk.bold.cyan('║') + ` ${chalk.bold(branch2)}`.padEnd(maxBranchLen + 1) + chalk.bold.cyan('║'));
-    console.log(chalk.bold.cyan('╠' + '═'.repeat(maxLabelLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╬' + '═'.repeat(maxBranchLen + 3) + '╣'));
+    console.log('\n' + chalk.bold.cyan('╔' + '═'.repeat(totalWidth - 2) + '╗'));
+    const title = '  Agent Performance Comparison';
+    console.log(chalk.bold.cyan('║') + chalk.bold.white(title.padEnd(totalWidth - 4)) + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('╠' + '═'.repeat(col1Width) + '╬' + '═'.repeat(col2Width) + '╬' + '═'.repeat(col3Width) + '╣'));
+    
+    // Column headers
+    const metricHeader = ' Metric'.padEnd(col1Width);
+    const branch1Plain = branch1;
+    const branch2Plain = branch2;
+    const branch1Padding = col2Width - branch1Plain.length - 1;
+    const branch2Padding = col3Width - branch2Plain.length - 1;
+    const branch1Header = ` ${chalk.bold(branch1Plain)}` + ' '.repeat(Math.max(0, branch1Padding));
+    const branch2Header = ` ${chalk.bold(branch2Plain)}` + ' '.repeat(Math.max(0, branch2Padding));
+    console.log(chalk.bold.cyan('║') + metricHeader + 
+                chalk.bold.cyan('║') + branch1Header + 
+                chalk.bold.cyan('║') + branch2Header + chalk.bold.cyan('║'));
+    console.log(chalk.bold.cyan('╠' + '═'.repeat(col1Width) + '╬' + '═'.repeat(col2Width) + '╬' + '═'.repeat(col3Width) + '╣'));
 
     // Data rows
-    metrics.forEach((m, index) => {
-      const labelPadded = ` ${m.label}`.padEnd(maxLabelLen + 1);
-      const v1Padded = ` ${m.v1}`.padEnd(maxBranchLen + 1);
-      const v2Padded = ` ${m.v2}`.padEnd(maxBranchLen + 1);
-      console.log(chalk.bold.cyan('║') + labelPadded + 
-                  chalk.bold.cyan('║') + v1Padded + 
-                  chalk.bold.cyan('║') + v2Padded + chalk.bold.cyan('║'));
+    metrics.forEach((m) => {
+      const labelStr = ` ${m.label}`.padEnd(col1Width);
+      
+      // Calculate padding needed for each value (without color codes)
+      const v1Plain = m.v1;
+      const v2Plain = m.v2;
+      const v1Padding = col2Width - v1Plain.length - 1; // -1 for the space before value
+      const v2Padding = col3Width - v2Plain.length - 1;
+      
+      // Build formatted strings with proper padding
+      const v1Formatted = ` ${m.color1(v1Plain)}` + ' '.repeat(Math.max(0, v1Padding));
+      const v2Formatted = ` ${m.color2(v2Plain)}` + ' '.repeat(Math.max(0, v2Padding));
+      
+      console.log(chalk.bold.cyan('║') + labelStr + 
+                  chalk.bold.cyan('║') + v1Formatted + 
+                  chalk.bold.cyan('║') + v2Formatted + chalk.bold.cyan('║'));
     });
 
     // Footer
-    console.log(chalk.bold.cyan('╚' + '═'.repeat(maxLabelLen + 3) + '╩' + '═'.repeat(maxBranchLen + 3) + '╩' + '═'.repeat(maxBranchLen + 3) + '╝'));
+    console.log(chalk.bold.cyan('╚' + '═'.repeat(col1Width) + '╩' + '═'.repeat(col2Width) + '╩' + '═'.repeat(col3Width) + '╝'));
 
     // Winner Analysis
     console.log('\n' + chalk.bold.cyan('🏆  Winner Analysis'));
