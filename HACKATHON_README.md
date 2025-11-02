@@ -129,7 +129,7 @@ git somnia-agent stats
 git somnia-agent logs
 ```
 
-**Live Dashboard:** `https://unabortive-davion-refractorily.ngrok-free.dev/dashboard`
+**Live Dashboard:** `https://somnia-git-agent.onrender.com/dashboard`
 
 ---
 

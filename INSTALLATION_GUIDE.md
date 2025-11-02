@@ -72,8 +72,8 @@ git somnia-agent secrets set AI_PROMPT="You are an aggressive trader"
 
 1. Go to your GitHub repository → Settings → Webhooks
 2. Click "Add webhook"
-3. **Payload URL**: `https://unabortive-davion-refractorily.ngrok-free.dev/webhook/github`
-   > **Note**: This is the public GitAgent backend URL. For production, use your deployed backend.
+3. **Payload URL**: `https://somnia-git-agent.onrender.com/webhook/github`
+   > **Note**: This is the production GitAgent backend URL.
 4. **Content type**: `application/json`
 5. **Events**: Select "Just the push event"
 6. Click "Add webhook"
@@ -147,7 +147,7 @@ git somnia-agent logs
 ## Live Dashboard
 
 Access the live dashboard at:
-`https://unabortive-davion-refractorily.ngrok-free.dev/dashboard`
+`https://somnia-git-agent.onrender.com/dashboard`
 
-> **Note**: This ngrok URL may change. Check the latest URL in the repository README.
+> **Note**: This is the production dashboard URL.
 

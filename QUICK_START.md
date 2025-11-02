@@ -41,7 +41,7 @@ git push -u origin main
 
 ### 5️⃣ Add Webhook (1 minute)
 - GitHub → Settings → Webhooks → Add webhook
-- URL: `https://your-ngrok-url.ngrok.io/webhook/github/push`
+- URL: `https://somnia-git-agent.onrender.com/webhook/github`
 - Events: Just push
 - Save
 

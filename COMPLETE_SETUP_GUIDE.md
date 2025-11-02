@@ -149,7 +149,7 @@ git push -u origin main
 2. Click **Settings** → **Webhooks** → **Add webhook**
 
 ### 5.2 Configure the Webhook
-- **Payload URL**: `https://abc123.ngrok.io/webhook/github/push` (use your ngrok URL)
+- **Payload URL**: `https://somnia-git-agent.onrender.com/webhook/github`
 - **Content type**: `application/json`
 - **Secret**: (optional, leave empty for now)
 - **Events**: Select **Just the push event**
@@ -205,9 +205,12 @@ This will:
 - Create `.gitagent.json` file
 
 ### 7.3 Update CLI API URL (if needed)
-Edit `/home/sharwin/GitFi/git-agent-cli/index.js`:
+The CLI is already configured to use the production backend at `https://somnia-git-agent.onrender.com`.
+
+For local development, edit `/home/sharwin/GitFi/git-agent-cli/index.js`:
 ```javascript
-const API_BASE_URL = 'https://abc123.ngrok.io'; // Your ngrok URL
+const API_BASE_URL = 'https://somnia-git-agent.onrender.com'; // Production URL
+// Or for local: 'http://localhost:3005'
 ```
 
 ---
