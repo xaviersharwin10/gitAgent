@@ -5,7 +5,8 @@ import axios from 'axios';
 // 1. Load configuration from environment variables (injected by GitAgent backend)
 const groqApiKey = process.env.GROQ_API_KEY;
 const agentContractAddress = process.env.AGENT_CONTRACT_ADDRESS;
-const agentPrompt = process.env.AI_PROMPT || "You are a cautious financial analyst. Based on the price, should I 'BUY' or 'HOLD'?"; // Default prompt
+// Aggressive branch: Aggressive strategy - executes most BUY signals, higher risk tolerance
+const agentPrompt = process.env.AI_PROMPT || "You are an aggressive financial analyst seeking growth opportunities. You BUY when you see any positive momentum or potential upside. You only HOLD if the price shows clear downward trend. Based on the current price, should I 'BUY' or 'HOLD'?";
 const somniaRpcUrl = process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3005';
 const repoUrl = process.env.REPO_URL || '';
@@ -20,6 +21,7 @@ console.log(`[Environment] AGENT_CONTRACT_ADDRESS: ${agentContractAddress ? '✅
 console.log(`[Environment] AGENT_PRIVATE_KEY: ${agentPrivateKey ? '✅ SET (hidden)' : '❌ NOT SET'}`);
 console.log(`[Environment] BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
 console.log(`[Environment] SOMNIA_RPC_URL: ${process.env.SOMNIA_RPC_URL || 'NOT SET'}`);
+console.log(`[Environment] Strategy: Aggressive (Higher Risk, Higher Reward)`);
 console.log(`[Environment] === End Environment Check ===`);
 
 if (!groqApiKey || !agentContractAddress) {
@@ -127,167 +129,50 @@ async function sendMetric(decision: string, price: number, tradeExecuted: boolea
   }
 }
 
-// 5. Execute a trade on Somnia using DEX Router
+// 5. Execute a trade on Somnia
 async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: string | null }> {
-  console.log('[Trade] 🔍 === Trade Execution Diagnostic ===');
-  
-  // Check 1: Agent Wallet
   if (!agentWallet) {
-    console.warn('[Trade] ❌ AGENT_PRIVATE_KEY not set in environment');
-    console.warn('[Trade] 💡 Fix: Set secret: git agent secrets set AGENT_PRIVATE_KEY=0x...');
-    console.warn('[Trade] ⚠️  Skipping trade execution');
+    console.warn('[Trade] Agent private key not set, skipping trade execution');
+    console.warn('[Trade] Set AGENT_PRIVATE_KEY secret to enable trade execution');
     return { success: false, txHash: null };
   }
-  console.log(`[Trade] ✅ Agent wallet initialized: ${agentWallet.address}`);
 
   try {
     // Get contract balance
     const contractBalance = await provider.getBalance(agentContractAddress as string);
     const walletBalance = await provider.getBalance(agentWallet.address);
-    console.log(`[Trade] 📊 Balance Check:`);
-    console.log(`[Trade]    Agent Contract: ${ethers.formatEther(contractBalance)} SOMI`);
-    console.log(`[Trade]    Wallet:         ${ethers.formatEther(walletBalance)} SOMI`);
+    console.log(`[Trade] Agent contract balance: ${ethers.formatEther(contractBalance)} SOMI`);
+    console.log(`[Trade] Wallet balance: ${ethers.formatEther(walletBalance)} SOMI`);
 
-    // Somnia DEX Router configuration
-    const SOMNIA_ROUTER_ADDRESS = process.env.SOMNIA_ROUTER_ADDRESS || '0x0000000000000000000000000000000000000000';
-    const TOKEN_IN_ADDRESS = process.env.TOKEN_IN_ADDRESS || ethers.ZeroAddress;
-    const TOKEN_OUT_ADDRESS = process.env.TOKEN_OUT_ADDRESS || ethers.ZeroAddress;
+    // For demo: Send a small amount to the contract (proving agent can receive funds)
+    // In production, this would be a DEX swap via contract.execute()
+    const amount = ethers.parseEther("0.001");
     
-    console.log(`[Trade] 🔧 DEX Configuration (Somnia Testnet):`);
-    console.log(`[Trade]    Router: ${SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' ? '❌ NOT SET' : '✅ ' + SOMNIA_ROUTER_ADDRESS}`);
-    console.log(`[Trade]    Token In (NIA):  ${TOKEN_IN_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_IN_ADDRESS}`);
-    console.log(`[Trade]    Token Out (USDT): ${TOKEN_OUT_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_OUT_ADDRESS}`);
-    console.log(`[Trade]    Network: Somnia Testnet (Chain ID: 50312)`);
-    
-    if (SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' || 
-        TOKEN_IN_ADDRESS === ethers.ZeroAddress || 
-        TOKEN_OUT_ADDRESS === ethers.ZeroAddress) {
-      console.log(`[Trade] 📝 Using fallback mode: Simple SOMI transfer to contract`);
-      console.log(`[Trade] 💡 To enable DEX swaps, set: SOMNIA_ROUTER_ADDRESS, TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS`);
-      
-      // Fallback: Simple token transfer if DEX not configured
-      const amount = ethers.parseEther("0.001");
-      const requiredBalance = amount + ethers.parseEther("0.0001"); // amount + gas
-      console.log(`[Trade] 💰 Required balance: ${ethers.formatEther(requiredBalance)} SOMI (0.001 + 0.0001 for gas)`);
-      
-      if (walletBalance < requiredBalance) {
-        console.warn(`[Trade] ❌ Insufficient wallet balance`);
-        console.warn(`[Trade]    Available: ${ethers.formatEther(walletBalance)} SOMI`);
-        console.warn(`[Trade]    Required: ${ethers.formatEther(requiredBalance)} SOMI`);
-        console.warn(`[Trade] 💡 Fix: Fund your wallet address ${agentWallet.address} with SOMI tokens`);
-        return { success: false, txHash: null };
-      }
-      
-      console.log(`[Trade] ✅ Balance sufficient, executing fallback transfer...`);
-      const tx = await agentWallet.sendTransaction({
-        to: agentContractAddress as string,
-        value: amount,
-      });
-      console.log(`[Trade] 📤 Transaction sent: ${tx.hash}`);
-      console.log(`[Trade] ⏳ Waiting for confirmation...`);
-      const receipt = await tx.wait();
-      console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
-      console.log(`[Trade] 🔗 Explorer: https://explorer.somnia.network/tx/${tx.hash}`);
-      return { success: true, txHash: tx.hash };
-    }
-
-    // SomniaRouter ABI (simplified - just swap function)
-    const ROUTER_ABI = [
-      "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
-      "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)"
-    ];
-
-    const router = new ethers.Contract(SOMNIA_ROUTER_ADDRESS, ROUTER_ABI, agentWallet);
-    
-    // ERC20 ABI for token operations
-    const ERC20_ABI = [
-      "function balanceOf(address account) external view returns (uint256)",
-      "function approve(address spender, uint256 amount) external returns (bool)",
-      "function allowance(address owner, address spender) external view returns (uint256)"
-    ];
-
-    console.log(`[Trade] ✅ DEX configured, proceeding with swap on Somnia Testnet...`);
-    console.log(`[Trade] 📋 Trade Details:`);
-    console.log(`[Trade]    Selling: NIA (Token In)`);
-    console.log(`[Trade]    Buying: USDT (Token Out)`);
-    
-    const tokenIn = new ethers.Contract(TOKEN_IN_ADDRESS, ERC20_ABI, agentWallet);
-    
-    // Check token balance
-    console.log(`[Trade] 🔍 Checking NIA token balance for wallet ${agentWallet.address}...`);
-    const tokenBalance = await tokenIn.balanceOf(agentWallet.address);
-    console.log(`[Trade]    NIA balance: ${ethers.formatUnits(tokenBalance, 18)} NIA tokens`);
-    
-    if (tokenBalance === 0n) {
-      console.warn('[Trade] ❌ No tokens to swap');
-      console.warn(`[Trade] 💡 Fix: Send tokens to wallet ${agentWallet.address}`);
+    if (walletBalance < amount + ethers.parseEther("0.0001")) { // Need gas + amount
+      console.warn('[Trade] Insufficient wallet balance for trade');
       return { success: false, txHash: null };
     }
 
-    // ALWAYS limit to max 1% of balance to prevent swapping everything
-    const onePercent = tokenBalance / 100n; // Always calculate 1%
-    const amountIn = onePercent; // Never swap more than 1%
-    
-    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens (1% of ${ethers.formatUnits(tokenBalance, 18)} total balance)`);
+    // Execute transaction: Send SOMI to agent contract (proof of execution)
+    // This demonstrates the agent can receive and hold funds on-chain
+    // In production, you'd use: agentContract.connect(agentWallet).execute(DEX_ADDRESS, swapData)
+    const tx = await agentWallet.sendTransaction({
+      to: agentContractAddress as string,
+      value: amount,
+      // No data needed - simple ETH transfer to contract
+    });
 
-    // Get expected output amount
-    const path = [TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS];
-    console.log(`[Trade] 🔍 Getting expected output amount...`);
-    const amountsOut = await router.getAmountsOut(amountIn, path);
-    const amountOutMin = amountsOut[1] * 95n / 100n; // 5% slippage tolerance
-    console.log(`[Trade]    Expected output: ${ethers.formatUnits(amountsOut[1], 18)} tokens`);
-    console.log(`[Trade]    Min output (5% slippage): ${ethers.formatUnits(amountOutMin, 18)} tokens`);
-
-    // Approve router to spend tokens
-    console.log(`[Trade] 🔍 Checking token allowance...`);
-    const allowance = await tokenIn.allowance(agentWallet.address, SOMNIA_ROUTER_ADDRESS);
-    console.log(`[Trade]    Current allowance: ${ethers.formatUnits(allowance, 18)} tokens`);
-    
-    if (allowance < amountIn) {
-      console.log(`[Trade] 📝 Approving router to spend tokens...`);
-      const approveTx = await tokenIn.approve(SOMNIA_ROUTER_ADDRESS, ethers.MaxUint256);
-      console.log(`[Trade]    Approval tx: ${approveTx.hash}`);
-      await approveTx.wait();
-      console.log(`[Trade] ✅ Approval confirmed`);
-    } else {
-      console.log(`[Trade] ✅ Sufficient allowance already set`);
-    }
-
-    // Execute swap via router
-    const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from now
-    console.log(`[Trade] 🚀 Executing swap on Somnia Testnet DEX...`);
-    console.log(`[Trade]    Swap: NIA → USDT`);
-    console.log(`[Trade]    Amount: ${ethers.formatUnits(amountIn, 18)} NIA`);
-    console.log(`[Trade]    Expected: ~${ethers.formatUnits(amountsOut[1], 18)} USDT`);
-    console.log(`[Trade]    Router: ${SOMNIA_ROUTER_ADDRESS}`);
-    console.log(`[Trade]    Deadline: ${new Date(deadline * 1000).toISOString()}`);
-    
-    const tx = await router.swapExactTokensForTokens(
-      amountIn,
-      amountOutMin,
-      path,
-      agentWallet.address, // Send tokens to wallet (or use agentContractAddress)
-      deadline
-    );
-
-    console.log(`[Trade] 📤 Swap transaction sent: ${tx.hash}`);
-    console.log(`[Trade] ⏳ Waiting for confirmation...`);
+    console.log(`[Trade] 📤 Transaction sent to Somnia: ${tx.hash}`);
+    console.log(`[Trade] Waiting for confirmation...`);
     
     const receipt = await tx.wait();
-    console.log(`[Trade] ✅ Swap confirmed in block ${receipt?.blockNumber}`);
-    console.log(`[Trade] 🔗 Explorer: https://explorer.somnia.network/tx/${tx.hash}`);
-    console.log(`[Trade] ✨ === Trade Execution Complete ===`);
+    console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
+    console.log(`[Trade] 🔗 View on explorer: https://shannon-explorer.somnia.network/tx/${tx.hash}`);
     
     return { success: true, txHash: tx.hash };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error(`[Trade] ❌ === Trade Execution Failed ===`);
-    console.error(`[Trade] ❌ Error: ${errorMessage}`);
-    if (errorStack) {
-      console.error(`[Trade] 📚 Stack trace: ${errorStack}`);
-    }
-    console.error(`[Trade] 💡 Check: Wallet balance, token balance, router address, network connection`);
+    console.error(`[Trade] ❌ Error executing trade: ${errorMessage}`);
     return { success: false, txHash: null };
   }
 }
@@ -303,7 +188,7 @@ async function runDecisionLoop() {
         { role: 'user', content: `The current price of SOMI is $${price.toFixed(4)}. Should I BUY or HOLD?` }
       ],
       model: 'llama-3.1-8b-instant',
-      temperature: 0.5,
+      temperature: 0.7, // Higher temperature for more aggressive/creative decisions (aggressive branch)
       max_tokens: 50,
     });
 
@@ -311,7 +196,11 @@ async function runDecisionLoop() {
     const isBuy = decision.toUpperCase().includes('BUY');
 
     if (isBuy) {
-      console.log(`[AI Decision] AI decided: BUY. Executing trade on Somnia...`);
+      console.log(`[AI Decision] AI decided: BUY.`);
+      
+      // Aggressive strategy: Execute ALL BUY signals (no conservative filter)
+      // This makes aggressive branch much more active than main branch
+      console.log(`[Trade] 🚀 Aggressive strategy: Executing trade immediately (no price threshold filter)...`);
       
       // Execute actual trade on Somnia blockchain
       const tradeResult = await executeTradeOnSomnia();
