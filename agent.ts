@@ -5,8 +5,8 @@ import axios from 'axios';
 // 1. Load configuration from environment variables (injected by GitAgent backend)
 const groqApiKey = process.env.GROQ_API_KEY;
 const agentContractAddress = process.env.AGENT_CONTRACT_ADDRESS;
-// Main branch: Conservative strategy - only buy on significant dips
-const agentPrompt = process.env.AI_PROMPT || "You are a conservative risk-averse financial analyst. You only BUY when the price has dropped significantly (below $0.38) or shows strong upward momentum. Otherwise, you HOLD to preserve capital. Based on the current price, should I 'BUY' or 'HOLD'?";
+// Moderate branch: Balanced strategy - moderate risk tolerance
+const agentPrompt = process.env.AI_PROMPT || "You are a balanced financial analyst with moderate risk tolerance. You BUY when you see positive trends or reasonable entry points (price below $0.42). You HOLD during uncertain or downward trends. Based on the current price, should I 'BUY' or 'HOLD'?";
 const somniaRpcUrl = process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3005';
 const repoUrl = process.env.REPO_URL || '';
@@ -21,7 +21,7 @@ console.log(`[Environment] AGENT_CONTRACT_ADDRESS: ${agentContractAddress ? '✅
 console.log(`[Environment] AGENT_PRIVATE_KEY: ${agentPrivateKey ? '✅ SET (hidden)' : '❌ NOT SET'}`);
 console.log(`[Environment] BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
 console.log(`[Environment] SOMNIA_RPC_URL: ${process.env.SOMNIA_RPC_URL || 'NOT SET'}`);
-console.log(`[Environment] Strategy: Conservative (Main Branch)`);
+console.log(`[Environment] Strategy: Moderate (Balanced Risk/Reward)`);
 console.log(`[Environment] === End Environment Check ===`);
 
 if (!groqApiKey || !agentContractAddress) {
