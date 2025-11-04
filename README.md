@@ -1,7 +1,7 @@
 # GitAgent: "Vercel for AI Agents"
 
 **Track:** Infra Agents  
-**One-Line Pitch:** A "zero-friction," Git-native deployment platform. `git push` is your deploy. `git branch` is your A/B test.
+**One-Line Pitch:** A "zero-friction," Git-native deployment platform. `git push` is your deploy. `git branch` is your A/B test. 
 
 ## The Problem
 
