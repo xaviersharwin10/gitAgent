@@ -150,49 +150,16 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     console.log(`[Trade]    Agent Contract: ${ethers.formatEther(contractBalance)} SOMI`);
     console.log(`[Trade]    Wallet:         ${ethers.formatEther(walletBalance)} SOMI`);
 
-    // Somnia DEX Router configuration
-    const SOMNIA_ROUTER_ADDRESS = process.env.SOMNIA_ROUTER_ADDRESS || '0x0000000000000000000000000000000000000000';
-    const TOKEN_IN_ADDRESS = process.env.TOKEN_IN_ADDRESS || ethers.ZeroAddress;
-    const TOKEN_OUT_ADDRESS = process.env.TOKEN_OUT_ADDRESS || ethers.ZeroAddress;
+    // Somnia DEX Router configuration (hardcoded for production)
+    const SOMNIA_ROUTER_ADDRESS = '0xb98c15a0dC1e271132e341250703c7e94c059e8D';
+    const TOKEN_IN_ADDRESS = '0xF2F773753cEbEFaF9b68b841d80C083b18C69311';
+    const TOKEN_OUT_ADDRESS = '0xDa4FDE38bE7a2b959BF46E032ECfA21e64019b76';
     
     console.log(`[Trade] 🔧 DEX Configuration (Somnia Testnet):`);
-    console.log(`[Trade]    Router: ${SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' ? '❌ NOT SET' : '✅ ' + SOMNIA_ROUTER_ADDRESS}`);
-    console.log(`[Trade]    Token In (NIA):  ${TOKEN_IN_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_IN_ADDRESS}`);
-    console.log(`[Trade]    Token Out (USDT): ${TOKEN_OUT_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_OUT_ADDRESS}`);
+    console.log(`[Trade]    Router: ✅ ${SOMNIA_ROUTER_ADDRESS}`);
+    console.log(`[Trade]    Token In (NIA):  ✅ ${TOKEN_IN_ADDRESS}`);
+    console.log(`[Trade]    Token Out (USDT): ✅ ${TOKEN_OUT_ADDRESS}`);
     console.log(`[Trade]    Network: Somnia Testnet (Chain ID: 50312)`);
-    
-    
-    if (SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' || 
-        TOKEN_IN_ADDRESS === ethers.ZeroAddress || 
-        TOKEN_OUT_ADDRESS === ethers.ZeroAddress) {
-      console.log(`[Trade] 📝 Using fallback mode: Simple SOMI transfer to contract`);
-      console.log(`[Trade] 💡 To enable DEX swaps, set: SOMNIA_ROUTER_ADDRESS, TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS`);
-      
-      // Fallback: Simple token transfer if DEX not configured - use very small amount
-      const amount = ethers.parseEther("0.0001"); // Very small amount
-      const requiredBalance = amount + ethers.parseEther("0.0001"); // amount + gas
-      console.log(`[Trade] 💰 Required balance: ${ethers.formatEther(requiredBalance)} SOMI (0.0001 + 0.0001 for gas)`);
-      
-      if (walletBalance < requiredBalance) {
-        console.warn(`[Trade] ❌ Insufficient wallet balance`);
-        console.warn(`[Trade]    Available: ${ethers.formatEther(walletBalance)} SOMI`);
-        console.warn(`[Trade]    Required: ${ethers.formatEther(requiredBalance)} SOMI`);
-        console.warn(`[Trade] 💡 Fix: Fund your wallet address ${agentWallet.address} with SOMI tokens`);
-        return { success: false, txHash: null };
-      }
-      
-      console.log(`[Trade] ✅ Balance sufficient, executing fallback transfer...`);
-      const tx = await agentWallet.sendTransaction({
-        to: agentContractAddress as string,
-        value: amount,
-      });
-      console.log(`[Trade] 📤 Transaction sent: ${tx.hash}`);
-      console.log(`[Trade] ⏳ Waiting for confirmation...`);
-      const receipt = await tx.wait();
-      console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
-      console.log(`[Trade] 🔗 Explorer: https://shannon-explorer.somnia.network/tx/${tx.hash}`);
-      return { success: true, txHash: tx.hash };
-    }
 
     // SomniaRouter ABI (simplified - just swap function)
     const ROUTER_ABI = [
