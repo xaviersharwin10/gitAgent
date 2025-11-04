@@ -161,6 +161,7 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     console.log(`[Trade]    Token Out (USDT): ${TOKEN_OUT_ADDRESS === ethers.ZeroAddress ? '❌ NOT SET' : '✅ ' + TOKEN_OUT_ADDRESS}`);
     console.log(`[Trade]    Network: Somnia Testnet (Chain ID: 50312)`);
     
+    
     if (SOMNIA_ROUTER_ADDRESS === '0x0000000000000000000000000000000000000000' || 
         TOKEN_IN_ADDRESS === ethers.ZeroAddress || 
         TOKEN_OUT_ADDRESS === ethers.ZeroAddress) {
@@ -226,11 +227,12 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
       return { success: false, txHash: null };
     }
 
-    // ALWAYS limit to max 1% of balance to prevent swapping everything
-    const onePercent = tokenBalance / 100n; // Always calculate 1%
-    const amountIn = onePercent; // Never swap more than 1%
+    // Use VERY small amount: 0.0001 tokens minimum, or 0.01% of balance (whichever is smaller)
+    const minAmount = ethers.parseEther("0.0001"); // Minimum 0.0001 tokens
+    const onePercent = tokenBalance / 10000n; // 0.01% of balance (1/10000)
+    const amountIn = onePercent < minAmount ? minAmount : onePercent; // Use smaller of the two
     
-    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens (1% of ${ethers.formatUnits(tokenBalance, 18)} total balance)`);
+    console.log(`[Trade] 💰 Swap amount: ${ethers.formatUnits(amountIn, 18)} tokens (0.01% of ${ethers.formatUnits(tokenBalance, 18)} total balance, min 0.0001)`);
 
     // Get expected output amount
     const path = [TOKEN_IN_ADDRESS, TOKEN_OUT_ADDRESS];
