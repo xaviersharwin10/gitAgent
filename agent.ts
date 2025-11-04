@@ -198,14 +198,13 @@ async function runDecisionLoop() {
     if (isBuy) {
       console.log(`[AI Decision] AI decided: BUY.`);
       
-      // Conservative strategy: Only execute trades if price is below threshold OR randomly (30% chance)
-      // This makes main branch more selective than aggressive branch
-      const priceBelowThreshold = price < 0.38; // Only buy if price dropped significantly
-      const randomExecution = Math.random() < 0.30; // 30% chance to execute even above threshold
-      const shouldExecuteTrade = priceBelowThreshold || randomExecution;
+      // Moderate strategy: Execute trades when price is below $0.42 (moderate threshold)
+      // This is more active than conservative main branch but less aggressive than aggressive branch
+      const priceBelowThreshold = price < 0.42; // Moderate threshold
+      const shouldExecuteTrade = priceBelowThreshold;
       
       if (shouldExecuteTrade) {
-        console.log(`[Trade] ✅ Conservative filter passed (price: $${price.toFixed(4)}, below threshold: ${priceBelowThreshold}). Executing trade...`);
+        console.log(`[Trade] ✅ Moderate filter passed (price: $${price.toFixed(4)} below $0.42 threshold). Executing trade...`);
         
         // Execute actual trade on Somnia blockchain
         const tradeResult = await executeTradeOnSomnia();
@@ -218,7 +217,7 @@ async function runDecisionLoop() {
           await sendMetric(`BUY - ${decision}`, price, false, null, null);
         }
       } else {
-        console.log(`[Trade] 🛡️ Conservative filter blocked trade execution (price: $${price.toFixed(4)} above $0.38 threshold). Holding instead.`);
+        console.log(`[Trade] 🛡️ Moderate filter blocked trade execution (price: $${price.toFixed(4)} above $0.42 threshold). Holding instead.`);
         await sendMetric(`BUY (FILTERED) - ${decision}`, price, false, null, null);
       }
     } else {
