@@ -322,7 +322,7 @@ async function runDecisionLoop() {
       
       if (tradeResult.success && tradeResult.txHash) {
         console.log(`[Trade] ✅ Trade executed successfully: ${tradeResult.txHash}`);
-        await sendMetric(`BUY - ${decision}`, price, true, tradeResult.txHash, 0.001);
+        await sendMetric(`BUY - ${decision}`, price, true, tradeResult.txHash, 0.0001);
       } else {
         console.log(`[Trade] ⚠️ Trade execution skipped (insufficient funds or key not set)`);
         await sendMetric(`BUY - ${decision}`, price, false, null, null);
