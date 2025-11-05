@@ -160,32 +160,6 @@ async function executeTradeOnSomnia(): Promise<{ success: boolean; txHash: strin
     console.log(`[Trade]    Token In (NIA):  ✅ ${TOKEN_IN_ADDRESS}`);
     console.log(`[Trade]    Token Out (USDT): ✅ ${TOKEN_OUT_ADDRESS}`);
     console.log(`[Trade]    Network: Somnia Testnet (Chain ID: 50312)`);
-      
-      // Fallback: Simple token transfer if DEX not configured - use very small amount
-      const amount = ethers.parseEther("0.0001"); // Very small amount
-      const requiredBalance = amount + ethers.parseEther("0.0001"); // amount + gas
-      console.log(`[Trade] 💰 Required balance: ${ethers.formatEther(requiredBalance)} SOMI (0.0001 + 0.0001 for gas)`);
-      
-      if (walletBalance < requiredBalance) {
-        console.warn(`[Trade] ❌ Insufficient wallet balance`);
-        console.warn(`[Trade]    Available: ${ethers.formatEther(walletBalance)} SOMI`);
-        console.warn(`[Trade]    Required: ${ethers.formatEther(requiredBalance)} SOMI`);
-        console.warn(`[Trade] 💡 Fix: Fund your wallet address ${agentWallet.address} with SOMI tokens`);
-        return { success: false, txHash: null };
-      }
-      
-      console.log(`[Trade] ✅ Balance sufficient, executing fallback transfer...`);
-      const tx = await agentWallet.sendTransaction({
-        to: agentContractAddress as string,
-        value: amount,
-      });
-      console.log(`[Trade] 📤 Transaction sent: ${tx.hash}`);
-      console.log(`[Trade] ⏳ Waiting for confirmation...`);
-      const receipt = await tx.wait();
-      console.log(`[Trade] ✅ Transaction confirmed in block ${receipt?.blockNumber}`);
-      console.log(`[Trade] 🔗 Explorer: https://shannon-explorer.somnia.network/tx/${tx.hash}`);
-      return { success: true, txHash: tx.hash };
-    }
 
     // SomniaRouter ABI (simplified - just swap function)
     const ROUTER_ABI = [
