@@ -21,7 +21,7 @@ console.log(`[Environment] AGENT_CONTRACT_ADDRESS: ${agentContractAddress ? '✅
 console.log(`[Environment] AGENT_PRIVATE_KEY: ${agentPrivateKey ? '✅ SET (hidden)' : '❌ NOT SET'}`);
 console.log(`[Environment] BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
 console.log(`[Environment] SOMNIA_RPC_URL: ${process.env.SOMNIA_RPC_URL || 'NOT SET'}`);
-console.log(`[Environment] Strategy: Conservative (Main Branch)`);
+console.log(`[Environment] Strategy: Test Branch (Testing Webhook Flow)`);
 console.log(`[Environment] === End Environment Check ===`);
 
 if (!groqApiKey || !agentContractAddress) {
