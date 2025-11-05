@@ -1,181 +1,299 @@
-# GitAgent: "Vercel for AI Agents"
+# 🤖 SomniaPush Agent Template
 
-**Track:** Infra Agents  
-**One-Line Pitch:** A "zero-friction," Git-native deployment platform. `git push` is your deploy. `git branch` is your A/B test. 
+> **Quick Start Template** — Clone this repository to deploy your own AI trading agent on Somnia blockchain in 5 minutes.
 
-## The Problem
+This is a ready-to-use template for creating autonomous AI agents that trade on Somnia blockchain. Just clone, configure, and push to deploy!
 
-Deploying and managing AI agents is complex, manual, and high-friction. Developers face:
-- **Manual Deployment**: Complex setup processes for each agent
-- **No A/B Testing**: Difficult to test different agent strategies in parallel
-- **Secret Management**: Insecure handling of API keys and credentials
-- **Monitoring**: No unified way to track agent performance and logs
-- **Scaling**: Hard to manage multiple agent versions and rollbacks
+---
 
-## The Solution
+## 🚀 What is This?
 
-GitAgent solves this by mapping the agent lifecycle to the Git workflow, making AI agent deployment as simple as pushing code.
+This template provides a complete, production-ready AI agent that:
+- ✅ Makes trading decisions using AI (Groq LLM)
+- ✅ Executes trades on Somnia DEX automatically
+- ✅ Sends metrics to SomniaPush dashboard
+- ✅ Works out of the box with minimal configuration
 
-### Core Features
+**Perfect for:** DeFi trading bots, automated strategies, A/B testing different approaches
 
-#### 🚀 `git push` to Deploy
-- GitHub webhook triggers automatic agent deployment
-- Clones your repository and runs your agent code
-- Injects secrets securely as environment variables
-- Manages agent lifecycle with PM2 process management
+---
 
-#### 🔄 `git branch` for A/B Testing
-- Each branch deploys as a separate, parallel agent
-- Compare performance between different strategies
-- Easy rollbacks with `git revert`
-- Collaborative development with team members
+## ⚡ Quick Start (5 Minutes)
 
-#### 🛠️ The `git somnia-agent` CLI
-- `git somnia-agent init` - Initialize GitAgent in your repository
-- `git somnia-agent secrets set GROQ_API_KEY=...` - Secure secret management
-- `git somnia-agent stats` - Real-time agent performance metrics
-- `git somnia-agent logs` - Live agent output and decisions
-- `git somnia-agent compare main aggressive` - Side-by-side branch comparison
+### Step 1: Clone This Template
 
-> **Setup:** Install with `npm install -g git-somnia-agent`, then run `git config --global alias.somnia-agent '!git-somnia-agent'` to enable `git somnia-agent` commands.
+```bash
+git clone https://github.com/xaviersharwin10/gitAgent.git
+cd gitAgent
+```
 
-## Somnia Blockchain Integration ⛓️
+### Step 2: Install Dependencies
 
-**This is NOT just a webhook system. Every agent is a deployed smart contract on Somnia:**
+```bash
+npm install
+```
 
-1. **On-Chain Agent Registry** (`AgentFactory.sol`)
-   - Deploys unique `Agent.sol` contracts for each repo/branch on Somnia testnet
-   - Creates immutable, on-chain identity for each AI agent
-   - Tracks all agents in a blockchain-backed registry
+### Step 3: Install SomniaPush CLI
 
-2. **Agent Smart Contracts** (`Agent.sol`)
-   - Each agent is a deployed contract on Somnia with its own address
-   - Agents can receive and hold SOMI tokens (ownable vault)
-   - Can execute arbitrary calls to DEXs, DeFi protocols on Somnia
-   - Immutable proof of deployment on-chain
-
-3. **Somnia Testnet Deployment**
-   - All contracts deployed to Somnia testnet (`chainId: 50312`)
-   - Uses Somnia RPC (`https://dream-rpc.somnia.network`)
-   - Agents interact with Somnia's DeFi ecosystem
-   - **Network**: Somnia Testnet (Chain ID: 50312)
-
-4. **Git → Blockchain → AI Pipeline**
-   ```
-   git push → GitHub webhook → Backend → Deploy Agent.sol on Somnia 
-   → Clone code → Run AI agent → Agent can execute trades on Somnia DEXs
-   ```
-
-## Quick Start
-
-### 1. Install CLI
 ```bash
 npm install -g git-somnia-agent
 git config --global alias.somnia-agent '!git-somnia-agent'
 ```
 
-### 2. Initialize Repository
+### Step 4: Initialize SomniaPush
+
 ```bash
-cd your-agent-repo
 git somnia-agent init
-git somnia-agent secrets set GROQ_API_KEY=your-key-here
 ```
 
-### 3. Configure Webhook
-- Go to GitHub → Repository Settings → Webhooks
-- Add webhook: `https://somnia-git-agent.onrender.com/webhook/github`
-- Events: Just the push event
+This creates a `.gitagent.json` file that connects your repository to SomniaPush.
 
-### 4. Deploy
+### Step 5: Set Your Secrets
+
+```bash
+# Required: Your Groq API key (get one at https://console.groq.com)
+git somnia-agent secrets set GROQ_API_KEY=your-groq-key-here
+
+# Required: Your agent's private key (for signing transactions)
+git somnia-agent secrets set AGENT_PRIVATE_KEY=0x-your-private-key-here
+
+# Optional: Custom AI prompt for your strategy
+git somnia-agent secrets set AI_PROMPT="Your custom trading strategy prompt"
+```
+
+### Step 6: Configure Webhook
+
+Visit **[https://somnia-git-agent.onrender.com](https://somnia-git-agent.onrender.com)** and:
+1. Enter your repository URL
+2. Click "Authorize GitHub"
+3. Webhook is automatically configured!
+
+### Step 7: Deploy Your Agent
+
 ```bash
 git push origin main
 ```
 
-### 5. Monitor
-```bash
-git somnia-agent stats
-git somnia-agent logs
-git somnia-agent compare main feature-branch
-```
-
-## Live Dashboard
-
-Access the live dashboard: **https://somnia-git-agent.onrender.com/dashboard**
-
-## Architecture
-
-```
-Developer → git push
-    ↓
-GitHub Webhook → GitAgent Backend
-    ↓
-Deploy Agent.sol contract on Somnia Testnet
-    ↓
-Agent gets on-chain address (0x...)
-    ↓
-Clone code & inject secrets
-    ↓
-Run AI agent (PM2)
-    ↓
-Agent can execute trades/DeFi on Somnia via contract.execute()
-```
-
-## Tech Stack
-
-- **Smart Contracts**: Solidity (Agent.sol, AgentFactory.sol)
-- **Backend**: Node.js, Express, SQLite, PM2
-- **Blockchain**: ethers.js, Somnia testnet
-- **CLI**: Commander.js, Chalk, Inquirer
-- **AI Integration**: Groq SDK, TypeScript
-- **Deployment**: Render.com
-
-## Project Structure
-
-```
-GitFi/
-├── contracts/          # Solidity smart contracts
-├── backend/           # Express server, webhook handler
-├── git-agent-cli/     # CLI tool
-├── agent-template/    # Agent starter template (separate repo)
-└── dashboard/         # Frontend dashboard
-```
-
-## Why This Matters for Somnia
-
-### 🎯 Infrastructure Track Fit
-This is infrastructure that makes deploying Somnia agents **10x easier**. Before GitAgent:
-- ❌ Manual contract deployment for each agent
-- ❌ No way to track which agents are deployed
-- ❌ Difficult to manage multiple agent versions
-- ❌ No unified deployment workflow
-
-After GitAgent:
-- ✅ `git push` auto-deploys agents to Somnia
-- ✅ On-chain registry tracks all agents
-- ✅ Each branch = separate agent contract
-- ✅ Production-ready deployment pipeline
-
-### 🔗 Somnia-Specific Benefits
-- **On-Chain Identity**: Every agent has a Somnia contract address
-- **Token Management**: Agents can hold/receive SOMI tokens
-- **DeFi Integration**: Agents can interact with Somnia DEXs/protocols
-- **Blockchain-Backed**: Agent registry is immutable on Somnia
-- **Recovery**: Can recover agent addresses even if backend is lost
-
-### 💡 Real-World Use Cases
-1. **DeFi Trading Agents**: Deploy trading bots that execute on Somnia DEXs
-2. **A/B Testing Strategies**: Test different AI strategies as separate contracts
-3. **Team Collaboration**: Multiple devs can deploy agents from same repo
-4. **Production Deployment**: Git-based CI/CD for blockchain agents
-
-## Contributing
-
-This project is open source. Contributions welcome!
-
-## License
-
-MIT
+**That's it!** Your agent is now:
+- ✅ Deployed as a smart contract on Somnia testnet
+- ✅ Running and making trading decisions
+- ✅ Visible in the [SomniaPush Dashboard](https://somnia-git-agent.onrender.com/dashboard)
 
 ---
 
-**GitAgent: Making AI agent deployment as simple as `git push`** 🚀
+## 📊 Monitor Your Agent
+
+### Using CLI
+
+```bash
+# Check real-time stats
+git somnia-agent stats
+
+# View live logs
+git somnia-agent logs
+
+# Verify secrets are set
+git somnia-agent secrets check
+```
+
+### Using Dashboard
+
+Visit **[https://somnia-git-agent.onrender.com/dashboard](https://somnia-git-agent.onrender.com/dashboard)** to see:
+- Live metrics (decisions, trades, success rate)
+- Recent trades with transaction hashes
+- Agent performance comparison
+- Real-time logs
+
+---
+
+## 🔄 Create Multiple Strategies (A/B Testing)
+
+Each Git branch becomes a separate agent contract! Test different strategies in parallel:
+
+```bash
+# Create a new strategy branch
+git checkout -b aggressive-strategy
+
+# Modify agent.ts with your strategy
+# ... edit the code ...
+
+# Deploy as separate agent
+git push origin aggressive-strategy
+
+# Compare performance
+git somnia-agent compare main aggressive-strategy
+```
+
+Now you have **2 agents running in parallel** on Somnia, each with its own smart contract!
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+The agent uses these environment variables (set via `git somnia-agent secrets set`):
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | ✅ Yes | Your Groq API key for AI decisions |
+| `AGENT_PRIVATE_KEY` | ✅ Yes | Private key for signing transactions |
+| `AI_PROMPT` | ❌ No | Custom prompt for your trading strategy |
+| `AGENT_CONTRACT_ADDRESS` | 🔄 Auto | Set automatically by SomniaPush |
+| `BACKEND_URL` | 🔄 Auto | Set automatically by SomniaPush |
+| `SOMNIA_RPC_URL` | 🔄 Auto | Set automatically by SomniaPush |
+
+### Customizing Your Agent
+
+Edit `agent.ts` to customize:
+
+1. **Trading Strategy** — Modify the `agentPrompt` variable
+2. **Decision Logic** — Change how BUY/HOLD decisions are made
+3. **Trade Execution** — Adjust trade amounts, slippage, etc.
+4. **Price Thresholds** — Set your entry/exit points
+
+**Example:** Change the conservative filter in `agent.ts`:
+```typescript
+// Only execute BUY if price < $0.38 or 30% random chance
+if (price < 0.38 || Math.random() < 0.3) {
+  // Execute trade
+}
+```
+
+---
+
+## 📁 Project Structure
+
+```
+gitAgent/
+├── agent.ts              # Main agent logic (edit this!)
+├── package.json          # Dependencies
+├── tsconfig.json         # TypeScript config
+├── .gitagent.json        # SomniaPush config (auto-generated)
+├── env.example           # Example environment variables
+└── README.md             # This file
+```
+
+---
+
+## 🎯 How It Works
+
+1. **Agent fetches price** from CoinGecko API
+2. **AI makes decision** using Groq LLM (BUY or HOLD)
+3. **If BUY:** Agent executes trade on Somnia DEX (NIA → USDT)
+4. **Metrics sent** to SomniaPush backend
+5. **Dashboard updates** in real-time
+
+**Decision Loop:** Runs every 30 seconds automatically
+
+---
+
+## 🔗 Key Features
+
+### 🤖 AI-Powered Decisions
+- Uses Groq LLM for intelligent trading decisions
+- Customizable prompts for different strategies
+- Context-aware analysis of market conditions
+
+### 💰 Real DEX Integration
+- Executes actual swaps on Somnia DEX
+- Supports NIA → USDT trades
+- Automatic slippage protection
+- Transaction tracking with on-chain proof
+
+### 📊 Built-in Monitoring
+- Automatic metrics collection
+- Real-time dashboard updates
+- Transaction history with explorer links
+- Performance analytics
+
+### 🔄 Branch-Based A/B Testing
+- Each branch = separate agent contract
+- Parallel strategy testing
+- Easy performance comparison
+- Git-native workflow
+
+---
+
+## 🛠️ Development
+
+### Local Testing
+
+```bash
+# Install dependencies
+npm install
+
+# Run agent locally (requires all env vars)
+npx ts-node agent.ts
+```
+
+### Making Changes
+
+1. Edit `agent.ts` with your strategy
+2. Test locally (optional)
+3. Commit and push:
+   ```bash
+   git add agent.ts
+   git commit -m "Update trading strategy"
+   git push origin main
+   ```
+4. Agent automatically redeploys with new code!
+
+---
+
+## 📚 Resources
+
+- **SomniaPush Dashboard**: [https://somnia-git-agent.onrender.com/dashboard](https://somnia-git-agent.onrender.com/dashboard)
+- **SomniaPush Platform**: [https://github.com/xaviersharwin10/somnia-git-agent](https://github.com/xaviersharwin10/somnia-git-agent)
+- **CLI Documentation**: [npmjs.com/package/git-somnia-agent](https://www.npmjs.com/package/git-somnia-agent)
+- **Somnia Docs**: [docs.somnia.network](https://docs.somnia.network)
+- **Get Test Tokens**: [Somnia Telegram](https://t.me/+XHq0F0JXMyhmMzM0)
+
+---
+
+## ❓ Troubleshooting
+
+### Agent not making decisions?
+- Check if `GROQ_API_KEY` is set: `git somnia-agent secrets check`
+- Verify agent is running: Check dashboard or `git somnia-agent stats`
+
+### Agent not executing trades?
+- Ensure `AGENT_PRIVATE_KEY` is set correctly
+- Check if agent wallet has NIA tokens for swaps
+- Verify DEX addresses are correct in `agent.ts`
+
+### Webhook not working?
+- Visit [https://somnia-git-agent.onrender.com](https://somnia-git-agent.onrender.com) to reconfigure
+- Check GitHub repository settings → Webhooks
+
+### Need help?
+- Check [SomniaPush Platform README](https://github.com/xaviersharwin10/somnia-git-agent)
+- Join [Somnia Telegram](https://t.me/+XHq0F0JXMyhmMzM0) for support
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](../LICENSE) file for details.
+
+---
+
+## 🚀 Next Steps
+
+1. ✅ Clone this template
+2. ✅ Set your secrets
+3. ✅ Configure webhook
+4. ✅ Push to deploy
+5. 🎉 Watch your agent trade on Somnia!
+
+**Ready to deploy?** Just `git push` and you're live! 🚀
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the [Somnia AI Hackathon](https://x.com/SomniaEco)**
+
+[Get Started](#-quick-start-5-minutes) • [View Dashboard](https://somnia-git-agent.onrender.com/dashboard) • [Platform Docs](https://github.com/xaviersharwin10/somnia-git-agent)
+
+</div>
