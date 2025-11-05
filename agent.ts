@@ -6,7 +6,7 @@ import axios from 'axios';
 const groqApiKey = process.env.GROQ_API_KEY;
 const agentContractAddress = process.env.AGENT_CONTRACT_ADDRESS;
 // Main branch: Conservative strategy - only buy on significant dips
-const agentPrompt = process.env.AI_PROMPT || "You are a conservative risk-averse financial analyst. You only BUY when the price has dropped significantly (below $0.38) or shows strong upward momentum. Otherwise, you HOLD to preserve capital. Based on the current price, should I 'BUY' or 'HOLD'?";
+const agentPrompt = process.env.AI_PROMPT || "You are a risk-taking financial analyst. You only BUY when the price has dropped significantly (below $0.38) or shows strong upward momentum. Otherwise, you HOLD to preserve capital. Based on the current price, should I 'BUY' or 'HOLD'?";
 const somniaRpcUrl = process.env.SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3005';
 const repoUrl = process.env.REPO_URL || '';
